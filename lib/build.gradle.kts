@@ -4,6 +4,7 @@ plugins {
     `maven-publish`
     `signing`
     `eclipse`
+    id("com.github.ben-manes.versions") version "0.44.0"
 }
 
 repositories {
@@ -18,9 +19,10 @@ group = "io.calimero"
 version = "2.6-SNAPSHOT"
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
-    targetCompatibility = JavaVersion.VERSION_11
-    
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+    }
+
     withSourcesJar()
     withJavadocJar()
 }
@@ -32,6 +34,16 @@ tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.compileJava { 
     options.compilerArgs = listOf("-Xlint:all,-serial", "--limit-modules", "java.base")
+}
+
+tasks.withType<Jar> {
+	from("${projectDir}/../LICENSE") {
+        into("META-INF")
+    }
+    if (name == "sourcesJar") {
+    	from("${projectDir}/../README.md")
+    }
+    archiveBaseName.set(rootProject.name)
 }
 
 dependencies {
