@@ -97,6 +97,7 @@ import org.usb4java.LibUsb;
 import io.calimero.usb.HidReport.BusAccessServerFeature;
 import io.calimero.usb.HidReportHeader.PacketType;
 import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
 import io.calimero.usb.TransferProtocolHeader.Protocol;
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
@@ -187,7 +188,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	// Not tested, because partial reports are not used currently
 	private final List<HidReport> partialReportList = Collections.synchronizedList(new ArrayList<>());
 
-	private volatile KnxTunnelEmi activeEmi = KnxTunnelEmi.CEmi;
+	private volatile KnxTunnelEmi activeEmi = KnxTunnelEmi.Cemi;
 
 	private final UsbCallback callback = new UsbCallback();
 
@@ -237,29 +238,29 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			try {
 				final var report = new HidReport(data);
 				logger.trace("EP {} {} I/O request {}", idx, dir, DataUnitBuilder
-						.toHex(Arrays.copyOfRange(data, 0, report.getReportHeader().getDataLength() + 3), ""));
-				final EnumSet<PacketType> packetType = report.getReportHeader().getPacketType();
-				final TransferProtocolHeader tph = report.getTransferProtocolHeader();
+						.toHex(Arrays.copyOfRange(data, 0, report.reportHeader().dataLength() + 3), ""));
+				final EnumSet<PacketType> packetType = report.reportHeader().packetType();
+				final TransferProtocolHeader tph = report.transferProtocolHeader();
 				if (packetType.contains(PacketType.Partial) || tph == null)
 					assemblePartialPackets(report);
-				else if (tph.getProtocol() == Protocol.KnxTunnel)
-					fireFrameReceived((KnxTunnelEmi) tph.getService(), report.getData());
-				else if (tph.getProtocol() == Protocol.BusAccessServerFeature) {
+				else if (tph.protocol() == Protocol.KnxTunnel)
+					fireFrameReceived((KnxTunnelEmi) tph.service(), report.data());
+				else if (tph.protocol() == Protocol.BusAccessServerFeature) {
 					// check whether we are waiting for a device feature response service
-					if (tph.getService() == BusAccessServerService.Response)
+					if (tph.service() == BusAccessServerService.Response)
 						setResponse(report);
-					else if (tph.getService() == BusAccessServerService.Info) {
-						final BusAccessServerFeature feature = report.getFeatureId();
-						logger.trace("{} {}", feature, DataUnitBuilder.toHex(report.getData(), ""));
+					else if (tph.service() == BusAccessServerService.Info) {
+						final BusAccessServerFeature feature = report.featureId();
+						logger.trace("{} {}", feature, DataUnitBuilder.toHex(report.data(), ""));
 					}
 
-					if (report.getFeatureId() == BusAccessServerFeature.ConnectionStatus) {
-						final int status = report.getData()[0];
+					if (report.featureId() == BusAccessServerFeature.ConnectionStatus) {
+						final int status = report.data()[0];
 						listeners.dispatchCustomEvent(status == 1 ? ConnectionStatus.Online : ConnectionStatus.Offline);
 					}
 				}
 				else
-					logger.warn("unexpected service {}: {}", tph.getService(), DataUnitBuilder.toHex(data, ""));
+					logger.warn("unexpected service {}: {}", tph.service(), DataUnitBuilder.toHex(data, ""));
 			}
 			catch (final KNXFormatException | RuntimeException e) {
 				logger.error("creating HID class report from {}", DataUnitBuilder.toHex(data, ""), e);
@@ -467,7 +468,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		try {
 			final byte[] data = frame.toByteArray();
 			logger.trace("sending I/O request {}",
-					DataUnitBuilder.toHex(Arrays.copyOfRange(data, 0, frame.getReportHeader().getDataLength() + 3), ""));
+					DataUnitBuilder.toHex(Arrays.copyOfRange(data, 0, frame.reportHeader().dataLength() + 3), ""));
 			out.syncSubmit(data);
 		}
 		catch (UsbException | UsbNotActiveException | UsbNotClaimedException | UsbDisconnectedException e) {
@@ -495,16 +496,16 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
-	public final EnumSet<KnxTunnelEmi> supportedEmiTypes()
+	public final EnumSet<EmiType> supportedEmiTypes()
 			throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return fromBits(getFeature(BusAccessServerFeature.SupportedEmiTypes)[1]);
 	}
 
-	private static final Map<Integer, KnxTunnelEmi> bitToEmi = Map.of(1 << 0, KnxTunnelEmi.Emi1, 1 << 1,
-			KnxTunnelEmi.Emi2, 1 << 2, KnxTunnelEmi.CEmi);
+	private static final Map<Integer, EmiType> bitToEmi = Map.of(1 << 0, EmiType.Emi1, 1 << 1,
+			EmiType.Emi2, 1 << 2, EmiType.Cemi);
 
-	private static EnumSet<KnxTunnelEmi> fromBits(final int bitfield) {
-		final var types = EnumSet.noneOf(KnxTunnelEmi.class);
+	private static EnumSet<EmiType> fromBits(final int bitfield) {
+		final var types = EnumSet.noneOf(EmiType.class);
 		for (final var t : bitToEmi.entrySet())
 			if ((bitfield & t.getKey()) == t.getKey())
 				types.add(t.getValue());
@@ -517,13 +518,13 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
-	public final KnxTunnelEmi activeEmiType() throws KNXPortClosedException, KNXTimeoutException, InterruptedException
+	public final EmiType activeEmiType() throws KNXPortClosedException, KNXTimeoutException, InterruptedException
 	{
 		final int bits = (int) toUnsigned(getFeature(BusAccessServerFeature.ActiveEmiType));
 		for (final var emi : KnxTunnelEmi.values())
 			if (emi.id() == bits) {
 				activeEmi = emi;
-				return emi;
+				return EmiType.values()[emi.ordinal()];
 			}
 		// TODO would an EmiType element "NotSet" make sense? at least one device I know returns
 		// 0 in uninitialized state
@@ -539,12 +540,13 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 */
-	public final void setActiveEmiType(final KnxTunnelEmi active) throws KNXPortClosedException, KNXTimeoutException
+	public final void setActiveEmiType(final EmiType active) throws KNXPortClosedException, KNXTimeoutException
 	{
+		final KnxTunnelEmi set = KnxTunnelEmi.values()[active.ordinal()];
 		final var report = HidReport.createFeatureService(BusAccessServerService.Set,
-				BusAccessServerFeature.ActiveEmiType, new byte[] { (byte) active.id() });
+				BusAccessServerFeature.ActiveEmiType, new byte[] { (byte) set.id() });
 		send(report);
-		activeEmi = active;
+		activeEmi = set;
 	}
 
 	/**
@@ -729,7 +731,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		final var report = HidReport.createFeatureService(BusAccessServerService.Get, feature, new byte[0]);
 		send(report);
 		final var res = waitForResponse();
-		return res.getData();
+		return res.data();
 	}
 
 	private HidReport waitForResponse() throws InterruptedException, KNXTimeoutException
@@ -761,25 +763,25 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	private void assemblePartialPackets(final HidReport part) throws KNXFormatException
 	{
 		partialReportList.add(part);
-		if (!part.getReportHeader().getPacketType().contains(PacketType.End))
+		if (!part.reportHeader().packetType().contains(PacketType.End))
 			return;
 
 		final ByteArrayOutputStream data = new ByteArrayOutputStream();
 		KnxTunnelEmi emiType = null;
 		for (int i = 0; i < partialReportList.size(); i++) {
 			final var report = partialReportList.get(i);
-			if (report.getReportHeader().getSeqNumber() != i + 1) {
+			if (report.reportHeader().sequenceNumber() != i + 1) {
 				// unexpected order, ignore complete KNX frame and discard received reports
 				final String reports = partialReportList.stream().map(Object::toString)
 						.collect(Collectors.joining("]\n\t[", "\t[", "]"));
 				logger.warn("received out of order HID report (expected seq {}, got {}) - ignore complete KNX frame, "
-						+ "discard reports:\n{}", i + 1, report.getReportHeader().getSeqNumber(), reports);
+						+ "discard reports:\n{}", i + 1, report.reportHeader().sequenceNumber(), reports);
 				partialReportList.clear();
 				return;
 			}
-			if (report.getReportHeader().getPacketType().contains(PacketType.Start))
-				emiType = (KnxTunnelEmi) report.getTransferProtocolHeader().getService();
-			final byte[] body = report.getData();
+			if (report.reportHeader().packetType().contains(PacketType.Start))
+				emiType = (KnxTunnelEmi) report.transferProtocolHeader().service();
+			final byte[] body = report.data();
 			data.write(body, 0, body.length);
 		}
 		final byte[] assembled = data.toByteArray();
@@ -804,7 +806,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		if ((frame[0] & 0xff) == 0xf0)
 			fe = new FrameEvent(this, frame);
 		else
-			fe = emiType == KnxTunnelEmi.CEmi ? new FrameEvent(this, CEMIFactory.create(frame, 0, frame.length))
+			fe = emiType == KnxTunnelEmi.Cemi ? new FrameEvent(this, CEMIFactory.create(frame, 0, frame.length))
 					: new FrameEvent(this, frame);
 		listeners.fire(l -> l.frameReceived(fe));
 	}

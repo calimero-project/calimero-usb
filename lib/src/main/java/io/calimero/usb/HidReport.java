@@ -44,11 +44,12 @@ import java.util.List;
 
 import io.calimero.usb.HidReportHeader.PacketType;
 import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
 import io.calimero.usb.TransferProtocolHeader.Protocol;
+import io.calimero.usb.TransferProtocolHeader.ServiceId;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.serial.usb.UsbConnection;
 
 /**
  * Represents a HID class report.
@@ -130,7 +131,7 @@ final class HidReport {
 	 * @param frame the EMI message as byte array
 	 * @return the created HID report
 	 */
-	public static List<HidReport> create(final UsbConnection.KnxTunnelEmi emi, final byte[] frame) {
+	public static List<HidReport> create(final KnxTunnelEmi emi, final byte[] frame) {
 		final List<HidReport> l = new ArrayList<>();
 		final EnumSet<PacketType> packetType = EnumSet.of(PacketType.Start);
 		int maxData = maxDataStartPacket;
@@ -152,7 +153,7 @@ final class HidReport {
 		return l;
 	}
 
-	private HidReport(final UsbConnection.ServiceId serviceId, final BusAccessServerFeature feature,
+	private HidReport(final ServiceId serviceId, final BusAccessServerFeature feature,
 			final byte[] frame) {
 		this(1, EnumSet.of(PacketType.Start, PacketType.End), TransferProtocolHeader.Protocol.BusAccessServerFeature,
 				serviceId, feature.id(), frame);
@@ -169,7 +170,7 @@ final class HidReport {
 	 * @param data data of transfer protocol body
 	 */
 	public HidReport(final int sequence, final EnumSet<PacketType> packetType, final Protocol protocol,
-			final UsbConnection.ServiceId serviceId, final int featureId, final byte[] data) {
+			final ServiceId serviceId, final int featureId, final byte[] data) {
 		int packetLength = data.length;
 		if (protocol == Protocol.BusAccessServerFeature) {
 			if (featureId < 1 || featureId > 5)
@@ -185,7 +186,7 @@ final class HidReport {
 		if (packetType.contains(PacketType.Start)) {
 			// only start packets have a transfer protocol header
 			tph = new TransferProtocolHeader(packetLength, protocol, serviceId);
-			packetLength += tph.getStructLength();
+			packetLength += tph.structLength();
 			maxData = maxDataStartPacket;
 		}
 		else {
@@ -207,13 +208,13 @@ final class HidReport {
 	public HidReport(final byte[] frame) throws KNXFormatException {
 		if (frame.length > maxReportSize)
 			throw new KNXFormatException("unsupported KNX USB frame of length " + frame.length + " > " + maxReportSize);
-		rh = new HidReportHeader(frame, 0);
-		int offset = rh.getStructLength();
-		if (rh.getPacketType().contains(PacketType.Start)) {
-			tph = new TransferProtocolHeader(frame, offset);
-			offset += tph.getStructLength();
+		rh = HidReportHeader.from(frame, 0);
+		int offset = rh.structLength();
+		if (rh.packetType().contains(PacketType.Start)) {
+			tph = TransferProtocolHeader.from(frame, offset);
+			offset += tph.structLength();
 			featureId = frame[offset] & 0xff;
-			if (tph.getProtocol() == Protocol.BusAccessServerFeature) {
+			if (tph.protocol() == Protocol.BusAccessServerFeature) {
 				if (featureId < 1 || featureId > 5)
 					throw new KNXFormatException("unsupported device service feature ID " + featureId);
 				++offset;
@@ -224,7 +225,7 @@ final class HidReport {
 			featureId = noEmiMsgCode;
 		}
 
-		final int datalength = rh.getDataLength() + rh.getStructLength();
+		final int datalength = rh.dataLength() + rh.structLength();
 		data = Arrays.copyOfRange(frame, offset, datalength);
 		// useful check?
 		if (datalength > frame.length)
@@ -234,10 +235,10 @@ final class HidReport {
 		// if body contains complete EMI frame (i.e., no partial packets), validate body length
 		// this is always true for feature protocol frames (those are single packets only)
 		final EnumSet<PacketType> type = EnumSet.of(PacketType.Start, PacketType.End);
-		if (rh.getPacketType().equals(type)) {
-			final int bodylength = tph.getBodyLength();
+		if (rh.packetType().equals(type)) {
+			final int bodylength = tph.bodyLength();
 			// distinguish offset in body
-			final int idOffset = tph.getProtocol() == Protocol.BusAccessServerFeature ? 1 : 0;
+			final int idOffset = tph.protocol() == Protocol.BusAccessServerFeature ? 1 : 0;
 			if (bodylength != idOffset + data.length)
 				throw new KNXFormatException(
 						"unexpected KNX USB protocol body length " + data.length + ", expected " + bodylength);
@@ -245,17 +246,17 @@ final class HidReport {
 	}
 
 	/** @return the KNX USB HID report header */
-	public HidReportHeader getReportHeader() {
+	public HidReportHeader reportHeader() {
 		return rh;
 	}
 
 	/** @return the KNX USB transfer protocol header */
-	public TransferProtocolHeader getTransferProtocolHeader() {
+	public TransferProtocolHeader transferProtocolHeader() {
 		return tph;
 	}
 
 	/** @return the KNX USB transfer protocol body data, empty array for no data */
-	public byte[] getData() {
+	public byte[] data() {
 		return data.clone();
 	}
 
@@ -265,12 +266,12 @@ final class HidReport {
 		final String s = hex.isEmpty() ? "" : ": " + hex;
 		if (tph == null)
 			return rh + s;
-		final Object feat = tph.getProtocol() == Protocol.BusAccessServerFeature ? getFeatureId() : "";
+		final Object feat = tph.protocol() == Protocol.BusAccessServerFeature ? featureId() : "";
 		return rh + " " + tph + " " + feat + s;
 	}
 
 	// only applicable for the Bus Access Server Feature protocol
-	public BusAccessServerFeature getFeatureId() {
+	public BusAccessServerFeature featureId() {
 		return BusAccessServerFeature.values()[featureId - 1];
 	}
 
@@ -279,7 +280,7 @@ final class HidReport {
 		rh.toByteArray(os);
 		if (tph != null) {
 			tph.toByteArray(os);
-			if (tph.getProtocol() == Protocol.BusAccessServerFeature)
+			if (tph.protocol() == Protocol.BusAccessServerFeature)
 				os.write(featureId);
 		}
 		os.write(data, 0, data.length);
