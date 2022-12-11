@@ -41,7 +41,6 @@ import java.util.EnumSet;
 
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.serial.usb.UsbConnection;
 
 /**
  * A transfer protocol header is used only in a HID report start packet.
@@ -77,8 +76,24 @@ final class TransferProtocolHeader {
 	// escape for future extension (reserved)
 //	private static final int ESCAPE = 0xff;
 
+	@FunctionalInterface
+	interface ServiceId {
+		int id();
+	}
+
+	/** EMI IDs for KNX Tunnel (for other protocol IDs the coding is not defined). */
+	enum KnxTunnelEmi implements ServiceId {
+		Emi1, Emi2, Cemi;
+
+		@Override
+		public int id() { return ordinal() + 1; }
+
+		@Override
+		public String toString() { return this == Emi1 ? "EMI1" : this == Emi2 ? "EMI2" : "cEMI"; }
+	}
+
 	/** Service IDs for Bus Access Server device feature service. */
-	enum BusAccessServerService implements UsbConnection.ServiceId {
+	enum BusAccessServerService implements ServiceId {
 		Get, Response, Set, Info;
 
 		@Override
@@ -91,22 +106,27 @@ final class TransferProtocolHeader {
 	private final int length;
 	private final Protocol protocol;
 	// depending on protocol ID, the device feature service ID or EMI ID
-	private final UsbConnection.ServiceId svc;
+	private final ServiceId svc;
 	// set 0x0 for KNX link layer tunnel; for frames not fully compliant to the used protocol ID,
 	// the manufacturer's KNX member ID is used
 	private final int manufacturer;
 
-	public TransferProtocolHeader(final int bodyLength, final Protocol protocol,
-			final UsbConnection.ServiceId service) {
+
+	TransferProtocolHeader(final int bodyLength, final Protocol protocol, final ServiceId service) {
+		this(bodyLength, protocol, service, 0);
+	}
+
+	TransferProtocolHeader(final int bodyLength, final Protocol protocol, final ServiceId service,
+			final int manufacturer) {
 		if (bodyLength < 0 || bodyLength > 0xffff)
 			throw new KNXIllegalArgumentException("body length not in range [0..0xffff]: " + bodyLength);
 		length = bodyLength;
 		this.protocol = protocol;
 		svc = service;
-		manufacturer = 0x0;
+		this.manufacturer = manufacturer;
 	}
 
-	public TransferProtocolHeader(final byte[] frame, final int offset) throws KNXFormatException {
+	static TransferProtocolHeader from(final byte[] frame, final int offset) throws KNXFormatException {
 		if (frame.length - offset < headerSize)
 			throw new KNXFormatException("frame to short to fit transfer protocol header");
 		int i = offset;
@@ -117,14 +137,15 @@ final class TransferProtocolHeader {
 		if (size != headerSize)
 			throw new KNXFormatException("unsupported transfer protocol header size " + size + " != " + headerSize);
 		final int lhi = (frame[i++] & 0xff) << 8;
-		length = lhi | (frame[i++] & 0xff);
+		final int length = lhi | (frame[i++] & 0xff);
 		final int p = frame[i++] & 0xff;
 		final int id = frame[i++] & 0xff;
 
-		final EnumSet<? extends UsbConnection.ServiceId> set;
+		Protocol protocol;
+		final EnumSet<? extends ServiceId> set;
 		if (p == Protocol.KnxTunnel.id()) {
 			protocol = Protocol.KnxTunnel;
-			set = EnumSet.allOf(UsbConnection.KnxTunnelEmi.class);
+			set = EnumSet.allOf(KnxTunnelEmi.class);
 		}
 		else if (p == Protocol.BusAccessServerFeature.id()) {
 			protocol = Protocol.BusAccessServerFeature;
@@ -132,42 +153,37 @@ final class TransferProtocolHeader {
 		}
 		else
 			throw new KNXFormatException("unsupported protocol ID", p);
-		set.removeIf((s) -> s.id() != id);
+		set.removeIf(s -> s.id() != id);
 		if (set.isEmpty())
 			throw new KNXFormatException("unsupported service/EMI ID", id);
-		svc = set.iterator().next();
+		final var svc = set.iterator().next();
 
 		final int mhi = (frame[i++] & 0xff) << 8;
-		manufacturer = mhi | (frame[i++] & 0xff);
+		final int manufacturer = mhi | (frame[i++] & 0xff);
+		return new TransferProtocolHeader(length, protocol, svc, manufacturer);
 	}
 
 	/** @return the protocol version */
-	public int getVersion() {
+	int version() {
 		return version;
 	}
 
 	/** @return the data length */
-	public int getBodyLength() {
+	int bodyLength() {
 		return length;
 	}
 
 	/** @return the protocol ID */
-	public Protocol getProtocol() {
+	Protocol protocol() {
 		return protocol;
 	}
 
 	/** @return the service or EMI ID */
-	public UsbConnection.ServiceId getService() {
+	ServiceId service() {
 		return svc;
 	}
 
-	@Override
-	public String toString() {
-		final String mf = manufacturer != 0 ? "manufacturer=" + manufacturer + " " : "";
-		return mf + protocol + " " + svc;
-	}
-
-	int getStructLength() {
+	int structLength() {
 		return headerSize;
 	}
 
@@ -176,10 +192,16 @@ final class TransferProtocolHeader {
 		os.write(headerSize);
 		os.write(length >>> 8);
 		os.write(length);
-		os.write(getProtocol().id());
-		os.write(getService().id());
+		os.write(protocol().id());
+		os.write(service().id());
 		os.write(manufacturer >>> 8);
 		os.write(manufacturer);
 		return os.toByteArray();
+	}
+
+	@Override
+	public String toString() {
+		final String mf = manufacturer != 0 ? "manufacturer=" + manufacturer + " " : "";
+		return mf + protocol + " " + svc;
 	}
 }

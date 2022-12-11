@@ -77,13 +77,8 @@ final class HidReportHeader {
 	private final EnumSet<PacketType> type;
 	private final int length;
 
-	HidReportHeader(final int sequence, final EnumSet<PacketType> type, final int dataLength) {
-		seqNo = validateSequence(sequence);
-		this.type = validatePacketType(type);
-		length = validateDataLength(dataLength);
-	}
 
-	HidReportHeader(final byte[] frame, final int offset) throws KNXFormatException {
+	static HidReportHeader from(final byte[] frame, final int offset) throws KNXFormatException {
 		if (frame.length - offset < headerSize)
 			throw new KNXFormatException("frame to short to fit HID report header");
 		final int id = frame[offset] & 0xff;
@@ -91,41 +86,43 @@ final class HidReportHeader {
 			throw new KNXFormatException("not a KNX USB report (wrong report ID " + id + ")");
 		final int info = frame[offset + 1] & 0xff;
 		try {
-			seqNo = validateSequence(info >> 4);
-			type = validatePacketType(parseType(info & 0xf));
-			length = validateDataLength(frame[offset + 2] & 0xff);
+			final int seqNo = info >> 4;
+			final var type = parseType(info & 0xf);
+			final int length = frame[offset + 2] & 0xff;
+			return new HidReportHeader(seqNo, type, length);
 		}
 		catch (final KNXIllegalArgumentException e) {
 			throw new KNXFormatException(e.getMessage());
 		}
 	}
 
+	HidReportHeader(final int sequence, final EnumSet<PacketType> type, final int dataLength) {
+		seqNo = validateSequence(sequence);
+		this.type = validatePacketType(type);
+		length = validateDataLength(dataLength);
+	}
+
 	/** @return the report ID, fixed to 1 for KNX communication */
-	public int getReportId() {
+	int reportId() {
 		return reportId;
 	}
 
 	/** @return the sequence number */
-	public int getSeqNumber() {
+	int sequenceNumber() {
 		return seqNo;
 	}
 
 	/** @return the packet type */
-	public EnumSet<PacketType> getPacketType() {
+	EnumSet<PacketType> packetType() {
 		return type;
 	}
 
 	/** @return the data length */
-	public int getDataLength() {
+	int dataLength() {
 		return length;
 	}
 
-	@Override
-	public String toString() {
-		return "Report ID " + reportId + " seq " + seqNo + " " + type + " data length " + length;
-	}
-
-	int getStructLength() {
+	int structLength() {
 		return headerSize;
 	}
 
@@ -137,6 +134,11 @@ final class HidReportHeader {
 		os.write(info);
 		os.write(length);
 		return os.toByteArray();
+	}
+
+	@Override
+	public String toString() {
+		return "Report ID " + reportId + " seq " + seqNo + " " + type + " data length " + length;
 	}
 
 	private static int validateSequence(final int seq) {
