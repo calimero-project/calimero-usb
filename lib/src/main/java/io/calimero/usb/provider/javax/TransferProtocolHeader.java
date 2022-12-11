@@ -41,13 +41,18 @@ import java.util.EnumSet;
 
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.Protocol;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.ServiceId;
 
 /**
  * A transfer protocol header is used only in a HID report start packet.
  *
  * @author B. Malinowsky
  */
-final class TransferProtocolHeader {
+// service: depending on protocol ID, the device feature service ID or EMI ID
+// manufacturer: set 0x0 for KNX link layer tunnel; for frames not fully compliant to the used protocol ID,
+// the manufacturer's KNX member ID is used
+record TransferProtocolHeader(int bodyLength, Protocol protocol, ServiceId service, int manufacturer) {
 	/*
 	  Transfer protocol header structure
 
@@ -103,27 +108,14 @@ final class TransferProtocolHeader {
 	private static final int version = 0x0;
 	private static final int headerSize = 8;
 
-	private final int length;
-	private final Protocol protocol;
-	// depending on protocol ID, the device feature service ID or EMI ID
-	private final ServiceId svc;
-	// set 0x0 for KNX link layer tunnel; for frames not fully compliant to the used protocol ID,
-	// the manufacturer's KNX member ID is used
-	private final int manufacturer;
-
 
 	TransferProtocolHeader(final int bodyLength, final Protocol protocol, final ServiceId service) {
 		this(bodyLength, protocol, service, 0);
 	}
 
-	TransferProtocolHeader(final int bodyLength, final Protocol protocol, final ServiceId service,
-			final int manufacturer) {
+	TransferProtocolHeader {
 		if (bodyLength < 0 || bodyLength > 0xffff)
 			throw new KNXIllegalArgumentException("body length not in range [0..0xffff]: " + bodyLength);
-		length = bodyLength;
-		this.protocol = protocol;
-		svc = service;
-		this.manufacturer = manufacturer;
 	}
 
 	static TransferProtocolHeader from(final byte[] frame, final int offset) throws KNXFormatException {
@@ -141,8 +133,8 @@ final class TransferProtocolHeader {
 		final int p = frame[i++] & 0xff;
 		final int id = frame[i++] & 0xff;
 
-		Protocol protocol;
 		final EnumSet<? extends ServiceId> set;
+		final Protocol protocol;
 		if (p == Protocol.KnxTunnel.id()) {
 			protocol = Protocol.KnxTunnel;
 			set = EnumSet.allOf(KnxTunnelEmi.class);
@@ -168,21 +160,6 @@ final class TransferProtocolHeader {
 		return version;
 	}
 
-	/** @return the data length */
-	int bodyLength() {
-		return length;
-	}
-
-	/** @return the protocol ID */
-	Protocol protocol() {
-		return protocol;
-	}
-
-	/** @return the service or EMI ID */
-	ServiceId service() {
-		return svc;
-	}
-
 	static int structLength() {
 		return headerSize;
 	}
@@ -190,8 +167,8 @@ final class TransferProtocolHeader {
 	void toByteArray(final ByteArrayOutputStream os) {
 		os.write(version);
 		os.write(headerSize);
-		os.write(length >>> 8);
-		os.write(length);
+		os.write(bodyLength >>> 8);
+		os.write(bodyLength);
 		os.write(protocol().id());
 		os.write(service().id());
 		os.write(manufacturer >>> 8);
@@ -201,6 +178,6 @@ final class TransferProtocolHeader {
 	@Override
 	public String toString() {
 		final String mf = manufacturer != 0 ? "manufacturer=" + manufacturer + " " : "";
-		return mf + protocol + " " + svc;
+		return mf + protocol + " " + service;
 	}
 }

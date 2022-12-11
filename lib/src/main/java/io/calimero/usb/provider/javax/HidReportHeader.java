@@ -42,7 +42,8 @@ import java.util.EnumSet;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 
-final class HidReportHeader {
+// first packet has sequence number 1 (0 is reserved)
+record HidReportHeader(int sequenceNumber, EnumSet<PacketType> packetType, int dataLength) {
 	/*
 	  HID report header structure
 
@@ -71,11 +72,6 @@ final class HidReportHeader {
 	// USB report ID fixed to 1 for KNX communication
 	private static final int reportId = 0x01;
 
-	// first packet has sequence number 1 (0 is reserved)
-	private final int seqNo;
-	private final EnumSet<PacketType> type;
-	private final int length;
-
 
 	static HidReportHeader from(final byte[] frame, final int offset) throws KNXFormatException {
 		if (frame.length - offset < headerSize)
@@ -95,10 +91,10 @@ final class HidReportHeader {
 		}
 	}
 
-	HidReportHeader(final int sequence, final EnumSet<PacketType> type, final int dataLength) {
-		seqNo = validateSequence(sequence);
-		this.type = validatePacketType(type);
-		length = validateDataLength(dataLength);
+	HidReportHeader {
+		validateSequence(sequenceNumber);
+		validatePacketType(packetType);
+		validateDataLength(dataLength);
 	}
 
 	/** @return the report ID, fixed to 1 for KNX communication */
@@ -106,19 +102,9 @@ final class HidReportHeader {
 		return reportId;
 	}
 
-	/** @return the sequence number */
-	int sequenceNumber() {
-		return seqNo;
-	}
-
-	/** @return the packet type */
-	EnumSet<PacketType> packetType() {
-		return type;
-	}
-
-	/** @return the data length */
-	int dataLength() {
-		return length;
+	@Override
+	public String toString() {
+		return "Report ID " + reportId + " seq " + sequenceNumber + " " + packetType + " data length " + dataLength;
 	}
 
 	static int structLength() {
@@ -127,28 +113,21 @@ final class HidReportHeader {
 
 	void toByteArray(final ByteArrayOutputStream os) {
 		os.write(reportId);
-		int info = seqNo << 4;
-		for (final PacketType t : type)
+		int info = sequenceNumber << 4;
+		for (final PacketType t : packetType)
 			info += t.id;
 		os.write(info);
-		os.write(length);
+		os.write(dataLength);
 	}
 
-	@Override
-	public String toString() {
-		return "Report ID " + reportId + " seq " + seqNo + " " + type + " data length " + length;
-	}
-
-	private static int validateSequence(final int seq) {
+	private static void validateSequence(final int seq) {
 		if (seq < 1 || seq > 5)
 			throw new KNXIllegalArgumentException("sequence number " + seq + " not in [1..5]");
-		return seq;
 	}
 
-	private static EnumSet<PacketType> validatePacketType(final EnumSet<PacketType> t) {
+	private static void validatePacketType(final EnumSet<PacketType> t) {
 		if (t.size() > 2)
 			throw new KNXIllegalArgumentException("invalid packet type " + t);
-		return t;
 	}
 
 	private static EnumSet<PacketType> parseType(final int t) {
@@ -157,9 +136,8 @@ final class HidReportHeader {
 		return set;
 	}
 
-	private static int validateDataLength(final int l) {
+	private static void validateDataLength(final int l) {
 		if (l < 0 || l > (maxFrameSize - headerSize))
 			throw new KNXIllegalArgumentException("data length " + l + " not in [0..61]");
-		return l;
 	}
 }
