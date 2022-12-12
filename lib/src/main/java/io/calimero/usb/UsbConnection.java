@@ -345,8 +345,8 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		slogger.debug("Enumerate USB devices\n{}", sb);
 
 		// Use the low-level API, because on Windows the string descriptors cause problems
-		if (slogger.isDebugEnabled())
-			slogger.debug("Enumerate USB devices using the low-level API\n{}",
+		if (slogger.isTraceEnabled())
+			slogger.trace("Enumerate USB devices using the low-level API\n{}",
 					getDeviceDescriptionsLowLevel().stream().collect(Collectors.joining("\n")));
 	}
 
@@ -577,7 +577,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			final List<UsbInterface> settings = uif.getSettings();
 			// iterate over all alternate settings this interface provides
 			for (final UsbInterface alt : settings) {
-				logger.trace("Interface {}, setting {}", alt,
+				logger.trace("{}, setting {}", alt,
 						alt.getUsbInterfaceDescriptor().bAlternateSetting() & 0xff);
 				// KNX USB has a HID class interface
 				final int interfaceClassHid = 0x03;
@@ -1044,73 +1044,6 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		if (speed != LibUsb.SPEED_UNKNOWN)
 			sb.append("\n").append(ind).append(DescriptorUtils.getSpeedName(speed)).append(" Speed USB");
 		return sb.toString();
-	}
-
-	public static Device findDeviceLowLevel(final int vendorId, final int productId) {
-		final Context ctx = null; // use default context
-		int err = LibUsb.init(null);
-		if (err != 0) {
-			slogger.error("LibUsb initialization error {}: {}", -err, LibUsb.strError(err));
-			return null;
-		}
-//		try {
-		final DeviceList list = new DeviceList();
-		final int res = LibUsb.getDeviceList(ctx, list);
-		if (res < 0) {
-			slogger.error("LibUsb device list error {}: {}", -res, LibUsb.strError(res));
-			return null;
-		}
-		try {
-			for (final Device device : list) {
-				final DeviceDescriptor d = new DeviceDescriptor();
-				err = LibUsb.getDeviceDescriptor(device, d);
-				if (err == 0) {
-					final int vendor = d.idVendor() & 0xffff;
-					final int product = d.idProduct() & 0xffff;
-					if (vendor == vendorId && product == productId) {
-						LibUsb.refDevice(device);
-						return device;
-					}
-				}
-			}
-		}
-		finally {
-			LibUsb.freeDeviceList(list, true);
-		}
-//		}
-//		finally {
-		// we can't call exit here, as we return a Device for subsequent usage
-//			LibUsb.exit(ctx);
-//		}
-		return null;
-	}
-
-	public static Optional<String> getProductName(final Device device) {
-		final DeviceDescriptor d = new DeviceDescriptor();
-		final DeviceHandle dh = new DeviceHandle();
-		if (LibUsb.getDeviceDescriptor(device, d) == 0 && LibUsb.open(device, dh) == 0) {
-			try {
-				return Optional.ofNullable(LibUsb.getStringDescriptor(dh, d.iProduct()));
-			}
-			finally {
-				LibUsb.close(dh);
-			}
-		}
-		return Optional.empty();
-	}
-
-	public static Optional<String> getManufacturer(final Device device) {
-		final DeviceDescriptor d = new DeviceDescriptor();
-		final DeviceHandle dh = new DeviceHandle();
-		if (LibUsb.getDeviceDescriptor(device, d) == 0 && LibUsb.open(device, dh) == 0) {
-			try {
-				return Optional.ofNullable(LibUsb.getStringDescriptor(dh, d.iManufacturer()));
-			}
-			finally {
-				LibUsb.close(dh);
-			}
-		}
-		return Optional.empty();
 	}
 
 	private static String toDeviceId(final int vendorId, final int productId) {
