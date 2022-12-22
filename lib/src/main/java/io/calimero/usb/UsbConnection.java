@@ -36,6 +36,11 @@
 
 package io.calimero.usb;
 
+import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
+import static java.lang.System.Logger.Level.INFO;
+import static java.lang.System.Logger.Level.TRACE;
+import static java.lang.System.Logger.Level.WARNING;
 import static java.util.stream.Collectors.flatMapping;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.toUnmodifiableList;
@@ -45,6 +50,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
+import java.lang.System.Logger;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -84,8 +90,6 @@ import javax.usb.event.UsbPipeErrorEvent;
 import javax.usb.event.UsbPipeEvent;
 import javax.usb.event.UsbPipeListener;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.usb4java.Context;
 import org.usb4java.DescriptorUtils;
 import org.usb4java.Device;
@@ -138,7 +142,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	private static final int tunnelingTimeout = 1000 + 500; // ms
 
 	private static final String logPrefix = "io.calimero.usb";
-	private static final Logger slogger = LoggerFactory.getLogger(logPrefix);
+	private static final Logger slogger = System.getLogger(logPrefix);
 	private final Logger logger;
 	private final String name;
 
@@ -154,7 +158,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 							flatMapping(UsbConnection::productsIds, toUnmodifiableList()))));
 		}
 		catch (final IOException | RuntimeException e) {
-			slogger.warn("failed loading KNX USB vendor:product IDs, autodetection of USB devices won't work", e);
+			slogger.log(WARNING, "failed loading KNX USB vendor:product IDs, autodetection of USB devices won't work", e);
 		}
 		return Map.of();
 	}
@@ -215,7 +219,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			final String dir = DescriptorUtils.getDirectionName(epaddr);
 
 			final UsbException e = event.getUsbException();
-			logger.error("EP {} {} error event for I/O request, {}", idx, dir, e.toString());
+			logger.log(ERROR, "EP {0} {1} error event for I/O request, {2}", idx, dir, e.toString());
 		}
 
 		@Override
@@ -227,12 +231,12 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			final byte[] data = event.getData();
 			// with some implementations, we might get a 0-length or unchanged array back, skip further parsing
 			if (event.getActualLength() == 0 || Arrays.equals(data, new byte[64])) {
-				logger.debug("EP {} {} empty I/O request (length {})", idx, dir, event.getActualLength());
+				logger.log(DEBUG, "EP {0} {1} empty I/O request (length {2})", idx, dir, event.getActualLength());
 				return;
 			}
 			try {
 				final var report = new HidReport(data);
-				logger.trace("EP {} {} I/O request {}", idx, dir,
+				logger.log(TRACE, "EP {0} {1} I/O request {2}", idx, dir,
 						DataUnitBuilder.toHex(Arrays.copyOfRange(data, 0, report.reportHeader().dataLength() + 3), ""));
 				final EnumSet<PacketType> packetType = report.reportHeader().packetType();
 				final TransferProtocolHeader tph = report.transferProtocolHeader();
@@ -246,7 +250,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 						setResponse(report);
 					else if (tph.service() == BusAccessServerService.Info) {
 						final BusAccessServerFeature feature = report.featureId();
-						logger.trace("{} {}", feature, DataUnitBuilder.toHex(report.data(), ""));
+						logger.log(TRACE, "{0} {1}", feature, DataUnitBuilder.toHex(report.data(), ""));
 					}
 
 					if (report.featureId() == BusAccessServerFeature.ConnectionStatus) {
@@ -255,10 +259,10 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 					}
 				}
 				else
-					logger.warn("unexpected service {}: {}", tph.service(), DataUnitBuilder.toHex(data, ""));
+					logger.log(WARNING, "unexpected service {0}: {1}", tph.service(), DataUnitBuilder.toHex(data, ""));
 			}
 			catch (final KNXFormatException | RuntimeException e) {
-				logger.error("creating HID class report from {}", DataUnitBuilder.toHex(data, ""), e);
+				logger.log(ERROR, "creating HID class report from " + DataUnitBuilder.toHex(data, ""), e);
 			}
 		}
 
@@ -277,7 +281,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			printDevices();
 		}
 		catch (final KnxRuntimeException e) {
-			slogger.error("Enumerate USB devices, " + e);
+			slogger.log(ERROR, "Enumerate USB devices, " + e);
 		}
 		try {
 			final StringBuilder sb = new StringBuilder();
@@ -288,7 +292,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 				}
 				catch (final UsbException ignore) {}
 			}
-			slogger.info("Found {} KNX USB devices{}{}", devices.size(), sb.length() > 0 ? ":" : "", sb);
+			slogger.log(INFO, "Found {0} KNX USB devices{1}{2}", devices.size(), sb.length() > 0 ? ":" : "", sb);
 		}
 		catch (final RuntimeException e) {}
 	}
@@ -342,12 +346,11 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	public static void printDevices() {
 		final StringBuilder sb = new StringBuilder();
 		traverse(getRootHub(), sb, "");
-		slogger.debug("Enumerate USB devices\n{}", sb);
+		slogger.log(DEBUG, "Enumerate USB devices\n{0}", sb);
 
 		// Use the low-level API, because on Windows the string descriptors cause problems
-		if (slogger.isTraceEnabled())
-			slogger.trace("Enumerate USB devices using the low-level API\n{}",
-					getDeviceDescriptionsLowLevel().stream().collect(Collectors.joining("\n")));
+		slogger.log(TRACE, () -> "Enumerate USB devices using the low-level API\n" +
+				getDeviceDescriptionsLowLevel().stream().collect(Collectors.joining("\n")));
 	}
 
 	/**
@@ -380,8 +383,8 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	private UsbConnection(final UsbDevice device, final String name) throws KNXException {
 		dev = device;
 		this.name = name.isEmpty() ? toDeviceId(device) : name;
-		logger = LoggerFactory.getLogger(logPrefix + "." + name());
-		listeners = new EventListeners<>(logger, ConnectionEvent.class);
+		logger = System.getLogger(logPrefix + "." + name());
+		listeners = new EventListeners<>(null, ConnectionEvent.class);
 		listeners.registerEventType(ConnectionStatus.class);
 
 		try {
@@ -449,7 +452,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	private void send(final HidReport frame) throws KNXPortClosedException, KNXTimeoutException {
 		try {
 			final byte[] data = frame.toByteArray();
-			logger.trace("sending I/O request {}",
+			logger.log(TRACE, "sending I/O request {0}",
 					DataUnitBuilder.toHex(Arrays.copyOfRange(data, 0, frame.reportHeader().dataLength() + 3), ""));
 			out.syncSubmit(data);
 		}
@@ -564,7 +567,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 
 	// returns [UsbInterface, Endpoint Address In, Endpoint Address Out]
 	private Object[] open(final UsbDevice device) throws UsbException {
-		logger.info(printInfo(device, logger, ""));
+		logger.log(INFO, printInfo(device, logger, ""));
 
 		final UsbConfiguration configuration = device.getActiveUsbConfiguration();
 		@SuppressWarnings("unchecked")
@@ -577,13 +580,13 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			final List<UsbInterface> settings = uif.getSettings();
 			// iterate over all alternate settings this interface provides
 			for (final UsbInterface alt : settings) {
-				logger.trace("{}, setting {}", alt,
+				logger.log(TRACE, "{0}, setting {1}", alt,
 						alt.getUsbInterfaceDescriptor().bAlternateSetting() & 0xff);
 				// KNX USB has a HID class interface
 				final int interfaceClassHid = 0x03;
 				final byte ifClass = alt.getUsbInterfaceDescriptor().bInterfaceClass();
 				if (ifClass != interfaceClassHid)
-					logger.warn("{} {} doesn't look right, no HID class", device, alt);
+					logger.log(WARNING, "{0} {1} doesn't look right, no HID class", device, alt);
 				else {
 					@SuppressWarnings("unchecked")
 					final List<UsbEndpoint> endpoints = alt.getUsbEndpoints();
@@ -592,7 +595,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 
 						final int index = addr & UsbConst.ENDPOINT_NUMBER_MASK;
 						final String inout = DescriptorUtils.getDirectionName(addr);
-						logger.trace("EP {} {}", index, inout);
+						logger.log(TRACE, "EP {0} {1}", index, inout);
 
 						final boolean epIn = (addr & LibUsb.ENDPOINT_IN) != 0;
 						if (epIn && epAddressIn == 0)
@@ -605,7 +608,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 				}
 			}
 		}
-		logger.debug("Found USB device endpoint addresses OUT 0x{}, IN 0x{}", Integer.toHexString(epAddressOut),
+		logger.log(DEBUG, "Found USB device endpoint addresses OUT 0x{0}, IN 0x{1}", Integer.toHexString(epAddressOut),
 				Integer.toHexString(epAddressIn));
 		final UsbInterface usbIf = Optional.ofNullable(useUsbIf).orElse(configuration.getUsbInterface((byte) 0));
 		try {
@@ -655,16 +658,16 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 					ifname = s;
 			}
 			catch (final UnsupportedEncodingException e) {}
-			logger.trace("release USB interface {}, active={}, claimed={}", ifname, knxUsbIf.isActive(),
+			logger.log(TRACE, "release USB interface {0}, active={1}, claimed={2}", ifname, knxUsbIf.isActive(),
 					knxUsbIf.isClaimed());
 			knxUsbIf.release();
 		}
 		catch (UsbNotActiveException | UsbNotOpenException | UsbDisconnectedException | UsbException e) {
 			// windows always throws "USB error 5: Unable to release interface: Entity not found", avoid noise
 			if (win && e instanceof UsbPlatformException)
-				logger.debug("close connection, {}", e.getMessage());
+				logger.log(DEBUG, "close connection, {0}", e.getMessage());
 			else
-				logger.warn("close connection", e);
+				logger.log(WARNING, "close connection", e);
 		}
 		finally {
 			if (win)
@@ -691,7 +694,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		}
 		catch (final Exception e) {
 			// specifically NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException
-			logger.error("on removing claimed interface number, subsequent claims might fail!", e);
+			logger.log(ERROR, "on removing claimed interface number, subsequent claims might fail!", e);
 		}
 	}
 
@@ -740,8 +743,8 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 				// unexpected order, ignore complete KNX frame and discard received reports
 				final String reports = partialReportList.stream().map(Object::toString)
 						.collect(Collectors.joining("]\n\t[", "\t[", "]"));
-				logger.warn("received out of order HID report (expected seq {}, got {}) - ignore complete KNX frame, "
-						+ "discard reports:\n{}", i + 1, report.reportHeader().sequenceNumber(), reports);
+				logger.log(WARNING, "received out of order HID report (expected seq {0}, got {1}) - ignore complete KNX frame, "
+						+ "discard reports:\n{2}", i + 1, report.reportHeader().sequenceNumber(), reports);
 				partialReportList.clear();
 				return;
 			}
@@ -751,7 +754,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			data.write(body, 0, body.length);
 		}
 		final byte[] assembled = data.toByteArray();
-		logger.debug("assembling KNX data frame from {} partial packets complete: {}", partialReportList.size(),
+		logger.log(DEBUG, "assembling KNX data frame from {0} partial packets complete: {1}", partialReportList.size(),
 				DataUnitBuilder.toHex(assembled, " "));
 		partialReportList.clear();
 		fireFrameReceived(emiType, assembled);
@@ -764,7 +767,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXFormatException on error creating cEMI message
 	 */
 	private void fireFrameReceived(final KnxTunnelEmi emiType, final byte[] frame) throws KNXFormatException {
-		logger.debug("received {} frame {}", emiType, DataUnitBuilder.toHex(frame, ""));
+		logger.log(DEBUG, "received {0} frame {1}", emiType, DataUnitBuilder.toHex(frame, ""));
 		final FrameEvent fe;
 		// check baos main service and forward frame as raw bytes
 		if ((frame[0] & 0xff) == 0xf0)
@@ -867,7 +870,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			sb.append(printInfo(device, slogger, indent));
 		}
 		catch (final UsbException e) {
-			slogger.warn("Accessing USB device, " + e);
+			slogger.log(WARNING, "Accessing USB device, " + e);
 		}
 		if (device.isUsbHub())
 			for (final Iterator<UsbDevice> i = getAttachedDevices((UsbHub) device).iterator(); i.hasNext();)
@@ -903,12 +906,12 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 				sb.append("\n").append(indent).append("S/N ").append(device.getString(sno));
 		}
 		catch (final UnsupportedEncodingException e) {
-			l.error("Java platform lacks support for the required standard charset UTF-16LE", e);
+			l.log(ERROR, "Java platform lacks support for the required standard charset UTF-16LE", e);
 		}
 		catch (final UsbPlatformException e) {
 			// Thrown on Win 7/8 (USB error 8) on calling device.getString on most USB interfaces.
 			// Therefore, catch it here, but don't issue any error/warning
-			l.debug("extracting USB device strings, {}", e.toString());
+			l.log(DEBUG, "extracting USB device strings, {0}", e.toString());
 		}
 		return sb.toString();
 	}
@@ -956,14 +959,14 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		final Context ctx = new Context();
 		final int err = LibUsb.init(ctx);
 		if (err != 0) {
-			slogger.error("LibUsb initialization error {}: {}", -err, LibUsb.strError(err));
+			slogger.log(ERROR, "LibUsb initialization error {0}: {1}", -err, LibUsb.strError(err));
 			return Collections.emptyList();
 		}
 		try {
 			final DeviceList list = new DeviceList();
 			final int res = LibUsb.getDeviceList(ctx, list);
 			if (res < 0) {
-				slogger.error("LibUsb device list error {}: {}", -res, LibUsb.strError(res));
+				slogger.log(ERROR, "LibUsb device list error {0}: {1}", -res, LibUsb.strError(res));
 				return Collections.emptyList();
 			}
 			try {
