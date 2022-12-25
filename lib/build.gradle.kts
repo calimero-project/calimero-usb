@@ -68,7 +68,7 @@ publishing {
             from(components["java"])
             pom {
                 name.set("Calimero USB service provider")
-                description.set("Provider to use USB for serial communication")
+                description.set("USB communication provider using org.usb4java:usb4java-javax")
                 url.set("https://github.com/calimero-project/calimero-usb")
                 inceptionYear.set("2006")
                 licenses {
@@ -84,7 +84,7 @@ publishing {
                     }
                 }
                 scm {
-                    connection.set("scm:git:git://github.com:calimero-project/calimero-usb.git")
+                    connection.set("scm:git:git://github.com/calimero-project/calimero-usb.git")
                     url.set("https://github.com/calimero-project/calimero-usb.git")
                 }
             }
@@ -93,8 +93,8 @@ publishing {
     repositories {
         maven {
             name = "maven"
-            val releasesRepoUrl = uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-            val snapshotsRepoUrl = uri("https://oss.sonatype.org/content/repositories/snapshots/")
+            val releasesRepoUrl = uri("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2")
+            val snapshotsRepoUrl = uri("https://s01.oss.sonatype.org/content/repositories/snapshots")
             url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
             credentials(PasswordCredentials::class)
         }
