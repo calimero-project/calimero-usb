@@ -47,9 +47,9 @@ import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
 import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
 import io.calimero.usb.TransferProtocolHeader.Protocol;
 import io.calimero.usb.TransferProtocolHeader.ServiceId;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
+import io.calimero.DataUnitBuilder;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
 
 /**
  * Represents a HID class report.

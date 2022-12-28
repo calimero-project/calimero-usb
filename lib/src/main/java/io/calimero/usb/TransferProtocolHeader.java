@@ -39,8 +39,8 @@ package io.calimero.usb;
 import java.io.ByteArrayOutputStream;
 import java.util.EnumSet;
 
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
 
 /**
  * A transfer protocol header is used only in a HID report start packet.

@@ -103,22 +103,22 @@ import io.calimero.usb.HidReportHeader.PacketType;
 import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
 import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
 import io.calimero.usb.TransferProtocolHeader.Protocol;
-import tuwien.auto.calimero.CloseEvent;
-import tuwien.auto.calimero.DataUnitBuilder;
-import tuwien.auto.calimero.DeviceDescriptor.DD0;
-import tuwien.auto.calimero.FrameEvent;
-import tuwien.auto.calimero.KNXException;
-import tuwien.auto.calimero.KNXFormatException;
-import tuwien.auto.calimero.KNXIllegalArgumentException;
-import tuwien.auto.calimero.KNXListener;
-import tuwien.auto.calimero.KNXTimeoutException;
-import tuwien.auto.calimero.KnxRuntimeException;
-import tuwien.auto.calimero.cemi.CEMIFactory;
-import tuwien.auto.calimero.internal.EventListeners;
-import tuwien.auto.calimero.internal.Executor;
-import tuwien.auto.calimero.serial.ConnectionEvent;
-import tuwien.auto.calimero.serial.ConnectionStatus;
-import tuwien.auto.calimero.serial.KNXPortClosedException;
+import io.calimero.CloseEvent;
+import io.calimero.DataUnitBuilder;
+import io.calimero.DeviceDescriptor.DD0;
+import io.calimero.FrameEvent;
+import io.calimero.KNXException;
+import io.calimero.KNXFormatException;
+import io.calimero.KNXIllegalArgumentException;
+import io.calimero.KNXListener;
+import io.calimero.KNXTimeoutException;
+import io.calimero.KnxRuntimeException;
+import io.calimero.cemi.CEMIFactory;
+import io.calimero.internal.EventListeners;
+import io.calimero.internal.Executor;
+import io.calimero.serial.ConnectionEvent;
+import io.calimero.serial.ConnectionStatus;
+import io.calimero.serial.KNXPortClosedException;
 
 /**
  * KNX USB connection providing EMI data exchange and Bus Access Server Feature service. The implementation for USB is
@@ -126,7 +126,7 @@ import tuwien.auto.calimero.serial.KNXPortClosedException;
  *
  * @author B. Malinowsky
  */
-final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnection {
+final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	// KNX interfaces that use a USB to ? adapter (e.g., USB to serial adapter)
 	// this allows us to at least list those devices, although we cannot tell the
 	// actual communication port (e.g., /dev/ttyACM0)
@@ -469,7 +469,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
-	 * @see tuwien.auto.calimero.DeviceDescriptor
+	 * @see io.calimero.DeviceDescriptor
 	 */
 	public final DD0 deviceDescriptor() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return DD0.from((int) toUnsigned(getFeature(BusAccessServerFeature.DeviceDescriptorType0)));

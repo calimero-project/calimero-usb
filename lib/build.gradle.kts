@@ -48,7 +48,7 @@ tasks.withType<Jar> {
 }
 
 dependencies {
-    api("com.github.calimero:calimero-core:$version")
+    api("io.calimero:calimero-core:$version")
     api("org.usb4java:usb4java-javax:1.3.0")
 }
 
