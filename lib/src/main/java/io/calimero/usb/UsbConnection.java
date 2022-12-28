@@ -384,7 +384,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		dev = device;
 		this.name = name.isEmpty() ? toDeviceId(device) : name;
 		logger = System.getLogger(logPrefix + "." + name());
-		listeners = new EventListeners<>(null, ConnectionEvent.class);
+		listeners = new EventListeners<>(ConnectionEvent.class);
 		listeners.registerEventType(ConnectionStatus.class);
 
 		try {
