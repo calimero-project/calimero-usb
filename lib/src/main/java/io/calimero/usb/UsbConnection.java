@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2022 B. Malinowsky
+    Copyright (c) 2015, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -98,11 +98,6 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
-import io.calimero.usb.HidReport.BusAccessServerFeature;
-import io.calimero.usb.HidReportHeader.PacketType;
-import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
-import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
-import io.calimero.usb.TransferProtocolHeader.Protocol;
 import io.calimero.CloseEvent;
 import io.calimero.DataUnitBuilder;
 import io.calimero.DeviceDescriptor.DD0;
@@ -119,6 +114,11 @@ import io.calimero.internal.Executor;
 import io.calimero.serial.ConnectionEvent;
 import io.calimero.serial.ConnectionStatus;
 import io.calimero.serial.KNXPortClosedException;
+import io.calimero.usb.HidReport.BusAccessServerFeature;
+import io.calimero.usb.HidReportHeader.PacketType;
+import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
+import io.calimero.usb.TransferProtocolHeader.Protocol;
 
 /**
  * KNX USB connection providing EMI data exchange and Bus Access Server Feature service. The implementation for USB is
@@ -563,6 +563,11 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	@Override
 	public void close() {
 		close(CloseEvent.CLIENT_REQUEST, "user request");
+	}
+
+	@Override
+	public String toString() {
+		return dev + " " + knxUsbIf;
 	}
 
 	// returns [UsbInterface, Endpoint Address In, Endpoint Address Out]
