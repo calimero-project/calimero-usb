@@ -34,7 +34,7 @@
     version.
 */
 
-package io.calimero.usb;
+package io.calimero.usb.provider;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -42,14 +42,14 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import io.calimero.usb.HidReportHeader.PacketType;
-import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
-import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
-import io.calimero.usb.TransferProtocolHeader.Protocol;
-import io.calimero.usb.TransferProtocolHeader.ServiceId;
 import io.calimero.DataUnitBuilder;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
+import io.calimero.usb.provider.HidReportHeader.PacketType;
+import io.calimero.usb.provider.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.provider.TransferProtocolHeader.KnxTunnelEmi;
+import io.calimero.usb.provider.TransferProtocolHeader.Protocol;
+import io.calimero.usb.provider.TransferProtocolHeader.ServiceId;
 
 /**
  * Represents a HID class report.

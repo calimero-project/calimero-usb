@@ -34,7 +34,7 @@
     version.
 */
 
-package io.calimero.usb;
+package io.calimero.usb.provider;
 
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
@@ -114,11 +114,11 @@ import io.calimero.internal.Executor;
 import io.calimero.serial.ConnectionEvent;
 import io.calimero.serial.ConnectionStatus;
 import io.calimero.serial.KNXPortClosedException;
-import io.calimero.usb.HidReport.BusAccessServerFeature;
-import io.calimero.usb.HidReportHeader.PacketType;
-import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
-import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
-import io.calimero.usb.TransferProtocolHeader.Protocol;
+import io.calimero.usb.provider.HidReport.BusAccessServerFeature;
+import io.calimero.usb.provider.HidReportHeader.PacketType;
+import io.calimero.usb.provider.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.provider.TransferProtocolHeader.KnxTunnelEmi;
+import io.calimero.usb.provider.TransferProtocolHeader.Protocol;
 
 /**
  * KNX USB connection providing EMI data exchange and Bus Access Server Feature service. The implementation for USB is
@@ -141,7 +141,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	// the additional milliseconds allow for delay of slow interfaces and OS crap
 	private static final int tunnelingTimeout = 1000 + 500; // ms
 
-	private static final String logPrefix = "io.calimero.usb";
+	private static final String logPrefix = "io.calimero.usb.provider";
 	private static final Logger slogger = System.getLogger(logPrefix);
 	private final Logger logger;
 	private final String name;

@@ -35,11 +35,11 @@ tasks.javadoc { options.encoding = "UTF-8" }
 tasks.compileJava {
     options.compilerArgs = listOf("-Xlint:all,-serial", 
         "--limit-modules", "java.base,io.calimero.core",
-        "--add-reads", "io.calimero.usb=ALL-UNNAMED")
+        "--add-reads", "io.calimero.usb.provider=ALL-UNNAMED")
 }
 
 tasks.javadoc { 
-    (options as StandardJavadocDocletOptions).addStringOption("-add-reads", "io.calimero.usb=ALL-UNNAMED")
+    (options as StandardJavadocDocletOptions).addStringOption("-add-reads", "io.calimero.usb.provider=ALL-UNNAMED")
 }
 
 tasks.withType<Jar> {

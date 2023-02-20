@@ -39,9 +39,9 @@
  *
  * @provides io.calimero.serial.usb.spi.UsbConnectionProvider
  */
-module io.calimero.usb {
+module io.calimero.usb.provider {
 	requires io.calimero.core;
 
 	provides io.calimero.serial.usb.spi.UsbConnectionProvider
-	    with io.calimero.usb.UsbConnectionProvider;
+	    with io.calimero.usb.provider.UsbConnectionProvider;
 }

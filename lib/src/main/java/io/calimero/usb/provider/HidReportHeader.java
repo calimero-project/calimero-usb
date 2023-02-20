@@ -34,7 +34,7 @@
     version.
 */
 
-package io.calimero.usb;
+package io.calimero.usb.provider;
 
 import java.io.ByteArrayOutputStream;
 import java.util.EnumSet;

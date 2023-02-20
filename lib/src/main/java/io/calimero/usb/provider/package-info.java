@@ -38,4 +38,4 @@
  * KNX USB communication with KNX networks.
  */
 
-package io.calimero.usb;
+package io.calimero.usb.provider;
