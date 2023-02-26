@@ -168,7 +168,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 				: Stream.of();
 	}
 
-	private final EventListeners<KNXListener> listeners;
+	private final EventListeners<KNXListener> listeners = new EventListeners<>(ConnectionEvent.class);
 
 	private final UsbDevice dev;
 	private final UsbInterface knxUsbIf;
@@ -384,7 +384,6 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		dev = device;
 		this.name = name.isEmpty() ? toDeviceId(device) : name;
 		logger = System.getLogger(logPrefix + "." + name());
-		listeners = new EventListeners<>(ConnectionEvent.class);
 		listeners.registerEventType(ConnectionStatus.class);
 
 		try {
