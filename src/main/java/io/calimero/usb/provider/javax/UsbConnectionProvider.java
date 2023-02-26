@@ -36,6 +36,9 @@
 
 package io.calimero.usb.provider.javax;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import io.calimero.KNXException;
 
 /**
@@ -50,5 +53,15 @@ public final class UsbConnectionProvider implements io.calimero.serial.usb.spi.U
 	@Override
 	public io.calimero.serial.usb.UsbConnection open(final String device) throws KNXException {
 		return new UsbConnection(device);
+	}
+
+	@Override
+	public Set<String> attachedKnxDevices() {
+		return UsbConnection.getDevices().stream().map(device -> toDeviceId(device.getUsbDeviceDescriptor().idVendor(),
+				device.getUsbDeviceDescriptor().idProduct())).collect(Collectors.toSet());
+	}
+
+	private static String toDeviceId(final int vendorId, final int productId) {
+		return String.format("%04x:%04x", vendorId, productId);
 	}
 }
