@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2022 B. Malinowsky
+    Copyright (c) 2015, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@ package io.calimero.usb.provider;
 
 import java.io.ByteArrayOutputStream;
 import java.util.EnumSet;
-import java.util.Iterator;
 
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
@@ -155,9 +154,7 @@ final class HidReportHeader {
 
 	private static EnumSet<PacketType> parseType(final int t) {
 		final EnumSet<PacketType> set = EnumSet.allOf(PacketType.class);
-		for (final Iterator<PacketType> i = set.iterator(); i.hasNext();)
-			if ((t & i.next().id()) == 0)
-				i.remove();
+		set.removeIf(packetType -> (t & packetType.id()) == 0);
 		return set;
 	}
 
