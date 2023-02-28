@@ -10,6 +10,7 @@ plugins {
 repositories {
     mavenCentral()
     maven("https://oss.sonatype.org/content/repositories/snapshots")
+    mavenLocal()
 }
 
 ext["junitJupiterVersion"] = "5.9.1"
