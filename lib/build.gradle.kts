@@ -2,9 +2,9 @@
 plugins {
     `java-library`
     `maven-publish`
-    `signing`
-    `eclipse`
-    id("com.github.ben-manes.versions") version "0.44.0"
+    signing
+    eclipse
+    id("com.github.ben-manes.versions") version "0.46.0"
 }
 
 repositories {
@@ -13,7 +13,7 @@ repositories {
     mavenLocal()
 }
 
-ext["junitJupiterVersion"] = "5.9.1"
+ext["junitJupiterVersion"] = "5.9.2"
 ext["desc"] = "Calimero USB service provider"
 
 group = "io.calimero"
@@ -62,7 +62,7 @@ testing {
         // Configure the built-in test suite
         val test by getting(JvmTestSuite::class) {
             // Use JUnit Jupiter test framework
-            useJUnitJupiter("5.9.1")
+            useJUnitJupiter("5.9.2")
         }
     }
 }
