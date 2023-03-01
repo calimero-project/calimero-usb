@@ -17,7 +17,7 @@ ext["junitJupiterVersion"] = "5.9.2"
 ext["desc"] = "Calimero USB service provider"
 
 group = "io.calimero"
-version = "2.6-SNAPSHOT"
+version = "3.0-SNAPSHOT"
 
 java {
     toolchain {
