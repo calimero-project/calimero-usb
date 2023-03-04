@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2022 B. Malinowsky
+    Copyright (c) 2015, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -164,11 +164,10 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	private static Stream<Integer> productsIds(final String line) {
-		return line.startsWith("\t") ? List.of(line.split("#")[0].split(",")).stream().map(s -> fromHex(s))
-				: Stream.of();
+		return line.startsWith("\t") ? Stream.of(line.split("#")[0].split(",")).map(s -> fromHex(s)) : Stream.of();
 	}
 
-	private final EventListeners<KNXListener> listeners;
+	private final EventListeners<KNXListener> listeners = new EventListeners<>(ConnectionEvent.class);
 
 	private final UsbDevice dev;
 	private final UsbInterface knxUsbIf;
@@ -350,7 +349,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 
 		// Use the low-level API, because on Windows the string descriptors cause problems
 		slogger.log(TRACE, () -> "Enumerate USB devices using the low-level API\n" +
-				getDeviceDescriptionsLowLevel().stream().collect(Collectors.joining("\n")));
+				String.join("\n", getDeviceDescriptionsLowLevel()));
 	}
 
 	/**
@@ -384,7 +383,6 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		dev = device;
 		this.name = name.isEmpty() ? toDeviceId(device) : name;
 		logger = System.getLogger(logPrefix + "." + name());
-		listeners = new EventListeners<>(ConnectionEvent.class);
 		listeners.registerEventType(ConnectionStatus.class);
 
 		try {
@@ -449,7 +447,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		}
 	}
 
-	private void send(final HidReport frame) throws KNXPortClosedException, KNXTimeoutException {
+	private void send(final HidReport frame) throws KNXPortClosedException {
 		try {
 			final byte[] data = frame.toByteArray();
 			logger.log(TRACE, "sending I/O request {0}",
@@ -471,7 +469,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws InterruptedException on interrupt
 	 * @see tuwien.auto.calimero.DeviceDescriptor
 	 */
-	public final DD0 deviceDescriptor() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
+	public DD0 deviceDescriptor() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return DD0.from((int) toUnsigned(getFeature(BusAccessServerFeature.DeviceDescriptorType0)));
 	}
 
@@ -481,7 +479,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
-	public final EnumSet<EmiType> supportedEmiTypes()
+	public EnumSet<EmiType> supportedEmiTypes()
 			throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return fromEmiBits(getFeature(BusAccessServerFeature.SupportedEmiTypes)[1]);
 	}
@@ -503,7 +501,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
-	public final EmiType activeEmiType() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
+	public EmiType activeEmiType() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		final int bits = (int) toUnsigned(getFeature(BusAccessServerFeature.ActiveEmiType));
 		for (final var emi : KnxTunnelEmi.values())
 			if (emi.id() == bits) {
@@ -517,14 +515,14 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 
 	/**
 	 * Sets the active EMI type for communication. Before setting an active EMI type, the supported EMI types should be
-	 * checked using {@link #getSupportedEmiTypes()}. If only one EMI type is supported, KNX USB device support for this
+	 * checked using {@link #supportedEmiTypes()}. If only one EMI type is supported, KNX USB device support for this
 	 * method is optional.
 	 *
 	 * @param active the EMI type to activate for communication
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 */
-	public final void setActiveEmiType(final EmiType active) throws KNXPortClosedException, KNXTimeoutException {
+	public void setActiveEmiType(final EmiType active) throws KNXPortClosedException, KNXTimeoutException {
 		final KnxTunnelEmi set = KnxTunnelEmi.values()[active.ordinal()];
 		final var report = HidReport.createFeatureService(BusAccessServerService.Set,
 				BusAccessServerFeature.ActiveEmiType, new byte[] { (byte) set.id() });
@@ -538,7 +536,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
-	public final boolean isKnxConnectionActive()
+	public boolean isKnxConnectionActive()
 			throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		final int data = getFeature(BusAccessServerFeature.ConnectionStatus)[0];
 		return (data & 0x01) == 0x01;
@@ -550,19 +548,24 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
-	public final int manufacturerCode() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
+	public int manufacturerCode() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return (int) toUnsigned(getFeature(BusAccessServerFeature.Manufacturer));
 	}
 
 	/** @return the name of this USB connection, usually in the format {@code <vendorID>:<productID>} */
 	@Override
-	public final String name() {
+	public String name() {
 		return name;
 	}
 
 	@Override
 	public void close() {
 		close(CloseEvent.CLIENT_REQUEST, "user request");
+	}
+
+	@Override
+	public String toString() {
+		return dev + " " + knxUsbIf;
 	}
 
 	// returns [UsbInterface, Endpoint Address In, Endpoint Address Out]
@@ -882,7 +885,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		final UsbDeviceDescriptor dd = device.getUsbDeviceDescriptor();
 		final String s = indent.isEmpty() ? "" : indent.substring(0, indent.length() - 5) + " |--";
 		// vendor ID is mandatory for KNX USB data interface
-		sb.append(s).append(device.toString());
+		sb.append(s).append(device);
 
 		// virtual devices don't contain string descriptors
 		final boolean virtual = device instanceof UsbHub && ((UsbHub) device).isRootUsbHub();
@@ -942,7 +945,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		if (name.isEmpty())
 			list.removeIf(i -> !isKnxInterfaceId(i.split("ID |\n")[1]));
 		else
-			list.removeIf(i -> i.toLowerCase().indexOf(name.toLowerCase()) == -1);
+			list.removeIf(i -> !i.toLowerCase().contains(name.toLowerCase()));
 		if (list.isEmpty())
 			throw new KNXException(
 					"no KNX USB device found" + (name.isEmpty() ? "" : " with name matching '" + name + "'"));
