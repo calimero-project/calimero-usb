@@ -38,6 +38,10 @@ tasks.compileJava {
         "--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED")
 }
 
+tasks.compileJava {
+    options.javaModuleVersion.set(provider { project.version.toString() })
+}
+
 tasks.javadoc { 
     (options as StandardJavadocDocletOptions).addStringOption("-add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED")
 }
