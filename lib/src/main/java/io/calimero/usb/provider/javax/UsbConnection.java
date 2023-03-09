@@ -461,9 +461,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	/**
-	 * Returns the KNX device descriptor type 0 of the USB interface.
-	 *
-	 * @return device descriptor type 0
+	 * {@return the KNX device descriptor type 0 of the USB interface}
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
@@ -475,7 +473,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	/**
-	 * @return the EMI types supported by the KNX USB device
+	 * {@return the EMI types supported by the KNX USB device}
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
@@ -497,7 +495,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	/**
-	 * @return the currently active EMI type in the KNX USB device
+	 * {@return the currently active EMI type in the KNX USB device}
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
@@ -533,7 +531,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	/**
-	 * @return current state of the KNX connection, active/not active
+	 * {@return the current state of the KNX connection: active/not active}
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
@@ -546,7 +544,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	/**
-	 * @return the KNX USB manufacturer code as 16 bit unsigned value
+	 * {@return the KNX USB manufacturer code as 16 bit unsigned value}
 	 * @throws KNXPortClosedException on closed port
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
@@ -556,7 +554,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		return (int) toUnsigned(getFeature(BusAccessServerFeature.Manufacturer));
 	}
 
-	/** @return the name of this USB connection, usually in the format {@code <vendorID>:<productID>} */
+	/** {@return the name of this USB connection} Usually in the format {@code <vendorID>:<productID>} */
 	@Override
 	public String name() {
 		return name;
