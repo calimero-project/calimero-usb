@@ -121,18 +121,17 @@ final class HidReportHeader {
 		return length;
 	}
 
-	int structLength() {
+	static int structLength() {
 		return headerSize;
 	}
 
-	byte[] toByteArray(final ByteArrayOutputStream os) {
+	void toByteArray(final ByteArrayOutputStream os) {
 		os.write(reportId);
 		int info = seqNo << 4;
 		for (final PacketType t : type)
 			info += t.id;
 		os.write(info);
 		os.write(length);
-		return os.toByteArray();
 	}
 
 	@Override

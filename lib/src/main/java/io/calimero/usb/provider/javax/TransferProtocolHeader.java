@@ -159,12 +159,12 @@ final class TransferProtocolHeader {
 		final var svc = set.iterator().next();
 
 		final int mhi = (frame[i++] & 0xff) << 8;
-		final int manufacturer = mhi | (frame[i++] & 0xff);
+		final int manufacturer = mhi | (frame[i] & 0xff);
 		return new TransferProtocolHeader(length, protocol, svc, manufacturer);
 	}
 
 	/** @return the protocol version */
-	int version() {
+	static int version() {
 		return version;
 	}
 
@@ -183,11 +183,11 @@ final class TransferProtocolHeader {
 		return svc;
 	}
 
-	int structLength() {
+	static int structLength() {
 		return headerSize;
 	}
 
-	byte[] toByteArray(final ByteArrayOutputStream os) {
+	void toByteArray(final ByteArrayOutputStream os) {
 		os.write(version);
 		os.write(headerSize);
 		os.write(length >>> 8);
@@ -196,7 +196,6 @@ final class TransferProtocolHeader {
 		os.write(service().id());
 		os.write(manufacturer >>> 8);
 		os.write(manufacturer);
-		return os.toByteArray();
 	}
 
 	@Override

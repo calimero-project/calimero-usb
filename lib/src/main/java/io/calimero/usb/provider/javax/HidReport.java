@@ -186,7 +186,7 @@ final class HidReport {
 		if (packetType.contains(PacketType.Start)) {
 			// only start packets have a transfer protocol header
 			tph = new TransferProtocolHeader(packetLength, protocol, serviceId);
-			packetLength += tph.structLength();
+			packetLength += TransferProtocolHeader.structLength();
 			maxData = maxDataStartPacket;
 		}
 		else {
@@ -209,10 +209,10 @@ final class HidReport {
 		if (frame.length > maxReportSize)
 			throw new KNXFormatException("unsupported KNX USB frame of length " + frame.length + " > " + maxReportSize);
 		rh = HidReportHeader.from(frame, 0);
-		int offset = rh.structLength();
+		int offset = HidReportHeader.structLength();
 		if (rh.packetType().contains(PacketType.Start)) {
 			tph = TransferProtocolHeader.from(frame, offset);
-			offset += tph.structLength();
+			offset += TransferProtocolHeader.structLength();
 			featureId = frame[offset] & 0xff;
 			if (tph.protocol() == Protocol.BusAccessServerFeature) {
 				if (featureId < 1 || featureId > 5)
@@ -225,7 +225,7 @@ final class HidReport {
 			featureId = noEmiMsgCode;
 		}
 
-		final int datalength = rh.dataLength() + rh.structLength();
+		final int datalength = rh.dataLength() + HidReportHeader.structLength();
 		data = Arrays.copyOfRange(frame, offset, datalength);
 		// useful check?
 		if (datalength > frame.length)

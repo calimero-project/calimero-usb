@@ -440,7 +440,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 
 	@Override
 	public void send(final byte[] frame, final BlockingMode blockingMode)
-			throws KNXPortClosedException, KNXTimeoutException {
+			throws KNXPortClosedException {
 		final var reports = HidReport.create(activeEmi, frame);
 		for (final var r : reports) {
 			send(r);
@@ -469,6 +469,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 * @throws InterruptedException on interrupt
 	 * @see io.calimero.DeviceDescriptor
 	 */
+	@Override
 	public DD0 deviceDescriptor() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return DD0.from((int) toUnsigned(getFeature(BusAccessServerFeature.DeviceDescriptorType0)));
 	}
@@ -501,6 +502,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
+	@Override
 	public EmiType activeEmiType() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		final int bits = (int) toUnsigned(getFeature(BusAccessServerFeature.ActiveEmiType));
 		for (final var emi : KnxTunnelEmi.values())
@@ -520,9 +522,9 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 *
 	 * @param active the EMI type to activate for communication
 	 * @throws KNXPortClosedException on closed port
-	 * @throws KNXTimeoutException on response timeout
 	 */
-	public void setActiveEmiType(final EmiType active) throws KNXPortClosedException, KNXTimeoutException {
+	@Override
+	public void setActiveEmiType(final EmiType active) throws KNXPortClosedException {
 		final KnxTunnelEmi set = KnxTunnelEmi.values()[active.ordinal()];
 		final var report = HidReport.createFeatureService(BusAccessServerService.Set,
 				BusAccessServerFeature.ActiveEmiType, new byte[] { (byte) set.id() });
@@ -536,6 +538,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
+	@Override
 	public boolean isKnxConnectionActive()
 			throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		final int data = getFeature(BusAccessServerFeature.ConnectionStatus)[0];
@@ -548,6 +551,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
+	@Override
 	public int manufacturerCode() throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return (int) toUnsigned(getFeature(BusAccessServerFeature.Manufacturer));
 	}
