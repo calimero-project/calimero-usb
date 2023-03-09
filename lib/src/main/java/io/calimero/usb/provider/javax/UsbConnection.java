@@ -34,7 +34,7 @@
     version.
 */
 
-package io.calimero.usb.provider;
+package io.calimero.usb.provider.javax;
 
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
@@ -114,11 +114,11 @@ import io.calimero.internal.Executor;
 import io.calimero.serial.ConnectionEvent;
 import io.calimero.serial.ConnectionStatus;
 import io.calimero.serial.KNXPortClosedException;
-import io.calimero.usb.provider.HidReport.BusAccessServerFeature;
-import io.calimero.usb.provider.HidReportHeader.PacketType;
-import io.calimero.usb.provider.TransferProtocolHeader.BusAccessServerService;
-import io.calimero.usb.provider.TransferProtocolHeader.KnxTunnelEmi;
-import io.calimero.usb.provider.TransferProtocolHeader.Protocol;
+import io.calimero.usb.provider.javax.HidReport.BusAccessServerFeature;
+import io.calimero.usb.provider.javax.HidReportHeader.PacketType;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.KnxTunnelEmi;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.Protocol;
 
 /**
  * KNX USB connection providing EMI data exchange and Bus Access Server Feature service. The implementation for USB is

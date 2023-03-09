@@ -1,1 +1,1 @@
-io.calimero.usb.provider.UsbConnectionProvider
+io.calimero.usb.provider.javax.UsbConnectionProvider
