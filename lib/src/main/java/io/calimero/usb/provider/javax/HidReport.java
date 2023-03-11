@@ -40,6 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HexFormat;
 import java.util.List;
 
 import io.calimero.usb.provider.javax.HidReportHeader.PacketType;
@@ -47,7 +48,6 @@ import io.calimero.usb.provider.javax.TransferProtocolHeader.BusAccessServerServ
 import io.calimero.usb.provider.javax.TransferProtocolHeader.KnxTunnelEmi;
 import io.calimero.usb.provider.javax.TransferProtocolHeader.Protocol;
 import io.calimero.usb.provider.javax.TransferProtocolHeader.ServiceId;
-import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
 
@@ -262,7 +262,7 @@ final class HidReport {
 
 	@Override
 	public String toString() {
-		final String hex = DataUnitBuilder.toHex(data, " ");
+		final String hex = HexFormat.ofDelimiter(" ").formatHex(data);
 		final String s = hex.isEmpty() ? "" : ": " + hex;
 		if (tph == null)
 			return rh + s;
