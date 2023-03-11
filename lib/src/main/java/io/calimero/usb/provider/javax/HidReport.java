@@ -40,6 +40,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.HexFormat;
 import java.util.List;
 
 import io.calimero.DataUnitBuilder;
@@ -262,7 +263,7 @@ final class HidReport {
 
 	@Override
 	public String toString() {
-		final String hex = DataUnitBuilder.toHex(data, " ");
+		final String hex = HexFormat.ofDelimiter(" ").formatHex(data);
 		final String s = hex.isEmpty() ? "" : ": " + hex;
 		if (tph == null)
 			return rh + s;

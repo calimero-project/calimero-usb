@@ -58,6 +58,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HexFormat;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -99,7 +100,6 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
 import io.calimero.CloseEvent;
-import io.calimero.DataUnitBuilder;
 import io.calimero.DeviceDescriptor.DD0;
 import io.calimero.FrameEvent;
 import io.calimero.KNXException;
@@ -236,7 +236,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 			try {
 				final var report = new HidReport(data);
 				logger.log(TRACE, "EP {0} {1} I/O request {2}", idx, dir,
-						DataUnitBuilder.toHex(Arrays.copyOfRange(data, 0, report.reportHeader().dataLength() + 3), ""));
+						HexFormat.of().formatHex(data, 0, report.reportHeader().dataLength() + 3));
 				final EnumSet<PacketType> packetType = report.reportHeader().packetType();
 				final TransferProtocolHeader tph = report.transferProtocolHeader();
 				if (packetType.contains(PacketType.Partial) || tph == null)
@@ -249,7 +249,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 						setResponse(report);
 					else if (tph.service() == BusAccessServerService.Info) {
 						final BusAccessServerFeature feature = report.featureId();
-						logger.log(TRACE, "{0} {1}", feature, DataUnitBuilder.toHex(report.data(), ""));
+						logger.log(TRACE, "{0} {1}", feature, HexFormat.of().formatHex(report.data()));
 					}
 
 					if (report.featureId() == BusAccessServerFeature.ConnectionStatus) {
@@ -258,10 +258,10 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 					}
 				}
 				else
-					logger.log(WARNING, "unexpected service {0}: {1}", tph.service(), DataUnitBuilder.toHex(data, ""));
+					logger.log(WARNING, "unexpected service {0}: {1}", tph.service(), HexFormat.of().formatHex(data));
 			}
 			catch (final KNXFormatException | RuntimeException e) {
-				logger.log(ERROR, "creating HID class report from " + DataUnitBuilder.toHex(data, ""), e);
+				logger.log(ERROR, "creating HID class report from " + HexFormat.of().formatHex(data), e);
 			}
 		}
 
@@ -451,7 +451,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		try {
 			final byte[] data = frame.toByteArray();
 			logger.log(TRACE, "sending I/O request {0}",
-					DataUnitBuilder.toHex(Arrays.copyOfRange(data, 0, frame.reportHeader().dataLength() + 3), ""));
+					HexFormat.of().formatHex(data, 0, frame.reportHeader().dataLength() + 3));
 			out.syncSubmit(data);
 		}
 		catch (UsbException | UsbNotActiveException | UsbNotClaimedException | UsbDisconnectedException e) {
@@ -760,7 +760,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		}
 		final byte[] assembled = data.toByteArray();
 		logger.log(DEBUG, "assembling KNX data frame from {0} partial packets complete: {1}", partialReportList.size(),
-				DataUnitBuilder.toHex(assembled, " "));
+				HexFormat.ofDelimiter(" ").formatHex(assembled));
 		partialReportList.clear();
 		fireFrameReceived(emiType, assembled);
 	}
@@ -772,7 +772,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 * @throws KNXFormatException on error creating cEMI message
 	 */
 	private void fireFrameReceived(final KnxTunnelEmi emiType, final byte[] frame) throws KNXFormatException {
-		logger.log(DEBUG, "received {0} frame {1}", emiType, DataUnitBuilder.toHex(frame, ""));
+		logger.log(DEBUG, "received {0} frame {1}", emiType, HexFormat.of().formatHex(frame));
 		final FrameEvent fe;
 		// check baos main service and forward frame as raw bytes
 		if ((frame[0] & 0xff) == 0xf0)
