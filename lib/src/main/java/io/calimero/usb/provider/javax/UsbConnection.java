@@ -141,7 +141,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	// the additional milliseconds allow for delay of slow interfaces and OS crap
 	private static final int tunnelingTimeout = 1000 + 500; // ms
 
-	private static final String logPrefix = "io.calimero.usb";
+	private static final String logPrefix = "io.calimero.usb.provider.javax";
 	private static final Logger slogger = System.getLogger(logPrefix);
 	private final Logger logger;
 	private final String name;
