@@ -38,6 +38,9 @@ package io.calimero.usb.provider.javax;
 
 import io.calimero.KNXException;
 
+/**
+ * Provider for USB connections implemented using javax-usb.
+ */
 public final class UsbConnectionProvider implements io.calimero.serial.usb.spi.UsbConnectionProvider {
 	@Override
 	public UsbConnection open(final int vendorId, final int productId) throws KNXException {
