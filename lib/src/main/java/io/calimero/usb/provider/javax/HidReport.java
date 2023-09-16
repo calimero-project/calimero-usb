@@ -43,7 +43,6 @@ import java.util.EnumSet;
 import java.util.HexFormat;
 import java.util.List;
 
-import io.calimero.DataUnitBuilder;
 import io.calimero.KNXFormatException;
 import io.calimero.KNXIllegalArgumentException;
 import io.calimero.usb.provider.javax.HidReportHeader.PacketType;
