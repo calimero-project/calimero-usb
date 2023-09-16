@@ -13,7 +13,7 @@ repositories {
     mavenLocal()
 }
 
-ext["junitJupiterVersion"] = "5.9.2"
+ext["junitJupiterVersion"] = "5.10.0"
 ext["desc"] = "Calimero USB service provider"
 
 group = "io.calimero"
