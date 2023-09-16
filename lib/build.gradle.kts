@@ -4,7 +4,7 @@ plugins {
     `maven-publish`
     signing
     eclipse
-    id("com.github.ben-manes.versions") version "0.46.0"
+    id("com.github.ben-manes.versions") version "0.48.0"
 }
 
 repositories {
