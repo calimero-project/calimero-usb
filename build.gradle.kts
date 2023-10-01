@@ -33,7 +33,7 @@ tasks.compileTestJava { options.encoding = "UTF-8" }
 tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.compileJava {
-    options.compilerArgs = listOf("-Xlint:all,-serial", 
+    options.compilerArgs = listOf("-Xlint:all,-serial",
         "--limit-modules", "java.base,io.calimero.core",
         "--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED")
 }
@@ -42,16 +42,16 @@ tasks.compileJava {
     options.javaModuleVersion.set(provider { project.version.toString() })
 }
 
-tasks.javadoc { 
+tasks.javadoc {
     (options as StandardJavadocDocletOptions).addStringOption("-add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED")
 }
 
 tasks.withType<Jar> {
-	from("${projectDir}/../LICENSE") {
+	from("${projectDir}/LICENSE") {
         into("META-INF")
     }
     if (name == "sourcesJar") {
-    	from("${projectDir}/../README.md")
+    	from("${projectDir}/README.md")
     }
     archiveBaseName.set(rootProject.name)
 }
