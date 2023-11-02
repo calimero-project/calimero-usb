@@ -478,6 +478,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	 * @throws KNXTimeoutException on response timeout
 	 * @throws InterruptedException on interrupt
 	 */
+	@Override
 	public EnumSet<EmiType> supportedEmiTypes()
 			throws KNXPortClosedException, KNXTimeoutException, InterruptedException {
 		return fromEmiBits(getFeature(BusAccessServerFeature.SupportedEmiTypes)[1]);
@@ -902,7 +903,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		try {
 			String desc = indent;
 			if (product != 0)
-				desc += "" + trimAtNull(device.getString(product));
+				desc += trimAtNull(device.getString(product));
 			if (manufacturer != 0)
 				desc += " (" + trimAtNull(device.getString(manufacturer)) + ")";
 			if (!desc.equals(indent))
