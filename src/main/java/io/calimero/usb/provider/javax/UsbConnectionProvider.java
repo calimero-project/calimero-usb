@@ -43,12 +43,12 @@ import tuwien.auto.calimero.KNXException;
  */
 public final class UsbConnectionProvider implements tuwien.auto.calimero.serial.usb.spi.UsbConnectionProvider {
 	@Override
-	public UsbConnection open(final int vendorId, final int productId) throws KNXException {
+	public io.calimero.serial.usb.UsbConnection open(final int vendorId, final int productId) throws KNXException {
 		return new UsbConnection(vendorId, productId);
 	}
 
 	@Override
-	public UsbConnection open(final String device) throws KNXException {
+	public io.calimero.serial.usb.UsbConnection open(final String device) throws KNXException {
 		return new UsbConnection(device);
 	}
 }
