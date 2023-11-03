@@ -293,7 +293,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 			}
 			slogger.log(INFO, "Found {0} KNX USB devices{1}{2}", devices.size(), sb.length() > 0 ? ":" : "", sb);
 		}
-		catch (final RuntimeException e) {}
+		catch (final RuntimeException ignore) {}
 	}
 
 	/**
@@ -663,7 +663,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 				if (s != null)
 					ifname = s;
 			}
-			catch (final UnsupportedEncodingException e) {}
+			catch (final UnsupportedEncodingException ignore) {}
 			logger.log(TRACE, "release USB interface {0}, active={1}, claimed={2}", ifname, knxUsbIf.isActive(),
 					knxUsbIf.isClaimed());
 			knxUsbIf.release();
@@ -788,7 +788,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		try {
 			return UsbHostManager.getUsbServices().getRootUsbHub();
 		}
-		catch (final UsbException | SecurityException e) {
+		catch (final UsbException | RuntimeException e) {
 			throw new KnxRuntimeException("Accessing USB root hub", e);
 		}
 	}
@@ -811,7 +811,7 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 				try {
 					return findDevice((UsbHub) d, vendorId, productId);
 				}
-				catch (final KNXException e) {}
+				catch (final KNXException ignore) {}
 			}
 		}
 		throw new KNXException(toDeviceId(vendorId, productId) + " not found");
