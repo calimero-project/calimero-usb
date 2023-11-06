@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2022, 2023 B. Malinowsky
+    Copyright (c) 2023, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -36,33 +36,26 @@
 
 package io.calimero.usb.provider.javax;
 
-import java.util.Set;
-import java.util.stream.Collectors;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 
 import io.calimero.KNXException;
 
-/**
- * Provider for USB connections implemented using javax-usb.
- */
-public final class UsbConnectionProvider implements io.calimero.serial.usb.spi.UsbConnectionProvider {
-	public io.calimero.serial.usb.UsbConnection open(final Device device) throws KNXException {
-		return new UsbConnection(device);
-	}
+@DisabledOnOs(OS.MAC)
+@DisabledIfEnvironmentVariable(named="CI", matches="true")
+class UsbConnectionProviderTests {
+	private final UsbConnectionProvider provider = new UsbConnectionProvider();
 
-	@Override
-	public io.calimero.serial.usb.UsbConnection open(final int vendorId, final int productId) throws KNXException {
-		return new UsbConnection(new Device(vendorId, productId));
-	}
-
-	@Override
-	public io.calimero.serial.usb.UsbConnection open(final String device) throws KNXException {
-		return new UsbConnection(device);
-	}
-
-	@Override
-	public Set<Device> attachedKnxDevices() {
-		try (var devices = UsbConnection.listDevices()) {
-			return devices.collect(Collectors.toUnmodifiableSet());
+	@Test
+	void openAllAttachedKnxDevices() throws KNXException {
+		final var devices = provider.attachedKnxDevices();
+		assertEquals(1, devices.size());
+		for (final var device : devices) {
+			try (var __ = provider.open(device)) {}
 		}
 	}
 }
