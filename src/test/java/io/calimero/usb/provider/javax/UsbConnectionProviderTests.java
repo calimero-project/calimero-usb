@@ -52,7 +52,7 @@ class UsbConnectionProviderTests {
 
 	@Test
 	void openAllAttachedKnxDevices() throws KNXException {
-		final var devices = provider.attachedKnxDevices();
+		final var devices = provider.attachedKnxUsbDevices();
 		assertEquals(1, devices.size());
 		for (final var device : devices) {
 			try (var __ = provider.open(device)) {}

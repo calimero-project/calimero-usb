@@ -63,6 +63,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -149,45 +150,17 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	private static final Logger slogger = System.getLogger(logPrefix);
 	private final Logger logger;
 
+	private static final DeviceInfo RootHubInfo = new DeviceInfo(new io.calimero.serial.usb.Device(0, 0), 0, 0, List.of(), 0);
+
+	private static final Map<Integer, List<Integer>> vendorProductIds = loadKnxUsbVendorProductIds();
 	private static final Pattern vendorProductId = Pattern.compile("^(\\p{XDigit}{4}):(\\p{XDigit}{4})$");
 
 	private final String name;
-
-	private static final Map<Integer, List<Integer>> vendorProductIds = loadKnxUsbVendorProductIds();
-
-	private static Map<Integer, List<Integer>> loadKnxUsbVendorProductIds() {
-		try (var is = UsbConnection.class.getResourceAsStream("/knxUsbVendorProductIds")) {
-			final var lines = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines();
-			final int[] currentVendor = new int[1];
-			return Map.copyOf(lines.filter(s -> !s.startsWith("#") && !s.isBlank())
-					.collect(groupingBy(
-							line -> line.startsWith("\t") ? currentVendor[0] : (currentVendor[0] = fromHex(line)),
-							flatMapping(UsbConnection::productIds, toUnmodifiableList()))));
-		}
-		catch (final IOException | RuntimeException e) {
-			slogger.log(WARNING, "failed loading KNX USB vendor:product IDs, auto-detection of USB devices won't work", e);
-		}
-		return Map.of();
-	}
-
-	private static Stream<Integer> productIds(final String line) {
-		return line.startsWith("\t") ? Stream.of(line.split("#")[0].split(",")).map(s -> fromHex(s)) : Stream.of();
-	}
-
-	private final EventListeners<KNXListener> listeners = new EventListeners<>(ConnectionEvent.class);
-
 	private final UsbDevice dev;
 	private final UsbInterface knxUsbIf;
 	private final UsbPipe out;
 	private final UsbPipe in;
-
-	/*
-	 Device Feature Service protocol:
-	 Device Feature Get is always answered by Device Feature Response
-	 Device Feature Get is only sent by the USB bus access client-side
-	 Device Feature Set and Info are not answered
-	 Device Feature Info is only sent by the USB bus access server-side
-	 */
+	private final EventListeners<KNXListener> listeners = new EventListeners<>(ConnectionEvent.class);
 
 	private final Object responseLock = new Object();
 	private HidReport response;
@@ -282,90 +255,63 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		}
 	}
 
-	static {
-		try {
-			printDevices();
+	private static Map<Integer, List<Integer>> loadKnxUsbVendorProductIds() {
+		try (var is = UsbConnection.class.getResourceAsStream("/knxUsbVendorProductIds")) {
+			final var lines = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines();
+			final int[] currentVendor = new int[1];
+			return Map.copyOf(lines.filter(s -> !s.startsWith("#") && !s.isBlank())
+					.collect(groupingBy(
+							line -> line.startsWith("\t") ? currentVendor[0] : (currentVendor[0] = fromHex(line)),
+							flatMapping(UsbConnection::productIds, toUnmodifiableList()))));
 		}
-		catch (final KnxRuntimeException e) {
+		catch (final IOException | RuntimeException e) {
+			slogger.log(WARNING, "failed loading KNX USB vendor:product IDs, auto-detection of USB devices won't work", e);
+		}
+		return Map.of();
+	}
+
+	private static Stream<Integer> productIds(final String line) {
+		return line.startsWith("\t") ? Stream.of(line.split("#")[0].split(",")).map(s -> fromHex(s)) : Stream.of();
+	}
+
+	static {
+		try (var stream = getDevicesLowLevel()) {
+			final StringBuilder sb = new StringBuilder();
+			final var infoList = stream.toList();
+			traverse(rootHub(), sb, "", infoList);
+			slogger.log(DEBUG, "Attached USB devices:\n{0}", sb);
+
+			final var knxDevices = infoList.stream().filter(UsbConnection::isKnxInterfaceId)
+					.map(info -> printInfo(info, " |   ")).toList();
+			slogger.log(INFO, "Found {0} KNX USB devices{1}{2}", knxDevices.size(), knxDevices.isEmpty() ? "" : ":\n",
+					String.join("\n", knxDevices));
+		}
+		catch (final RuntimeException e) {
 			slogger.log(ERROR, "Enumerate USB devices, " + e);
 		}
-		try {
-			final StringBuilder sb = new StringBuilder();
-			final List<UsbDevice> devices = getKnxDevices();
-			for (final UsbDevice d : devices) {
-				try {
-					sb.append("\n").append(printInfo(d, slogger, " |   "));
-				}
-				catch (final UsbException ignore) {}
-			}
-			slogger.log(INFO, "Found {0} KNX USB devices{1}{2}", devices.size(), sb.length() > 0 ? ":" : "", sb);
-		}
-		catch (final RuntimeException ignore) {}
 	}
 
 	/**
-	 * Scans for USB device connection changes, so subsequent traversals provide an updated view of attached USB
-	 * interfaces.
+	 * Returns a stream of KNX devices currently attached to the host, based on known KNX vendor:product IDs.
 	 *
-	 * @throws SecurityException on restricted access to USB services indicated as security violation
-	 * @throws UsbException on error with USB services
+	 * @return stream of attached KNX devices
 	 */
-	static void updateDeviceList() throws SecurityException, UsbException {
-		((org.usb4java.javax.Services) UsbHostManager.getUsbServices()).scan();
-	}
-
-	static List<UsbDevice> getDevices() {
-		return collect(getRootHub());
-	}
-
-	/**
-	 * Returns the list of KNX devices currently attached to the host, based on known KNX vendor IDs.
-	 *
-	 * @return the list of found KNX devices
-	 */
-	static List<UsbDevice> getKnxDevices() {
-		final List<UsbDevice> knx = new ArrayList<>();
-		for (final UsbDevice d : getDevices()) {
-			final var descriptor = d.getUsbDeviceDescriptor();
-			final int vendor = descriptor.idVendor() & 0xffff;
-			if (vendorProductIds.getOrDefault(vendor, List.of()).contains(descriptor.idProduct() & 0xffff))
-				knx.add(d);
-		}
-		return knx;
-	}
-
-	static Stream<UsbConnectionProvider.Device> listDevices() {
+	static Stream<io.calimero.serial.usb.Device> attachedKnxDevices() {
 		return getDevicesLowLevel().map(DeviceInfo::device).filter(UsbConnection::isKnxInterfaceId);
 	}
 
-	static List<UsbDevice> getVirtualSerialKnxDevices() throws SecurityException {
-		final List<UsbDevice> knx = new ArrayList<>();
-		for (final UsbDevice d : getDevices()) {
-			final int vendor = d.getUsbDeviceDescriptor().idVendor() & 0xffff;
-			final int product = d.getUsbDeviceDescriptor().idProduct() & 0xffff;
+	static List<io.calimero.serial.usb.Device> attachedVirtualSerialKnxDevices() throws SecurityException {
+		return getDevicesLowLevel().map(DeviceInfo::device).filter(info -> {
 			for (int i = 0; i < virtualSerialVendorIds.length; i++) {
-				final int v = virtualSerialVendorIds[i];
-				if (v == vendor && virtualSerialProductIds[i] == product)
-					knx.add(d);
+				if (virtualSerialVendorIds[i] == info.vendorId()
+						&& virtualSerialProductIds[i] == info.productId())
+					return true;
 			}
-		}
-		return knx;
+			return false;
+		}).toList();
 	}
 
-	private static void printDevices() {
-		final StringBuilder sb = new StringBuilder();
-		traverse(getRootHub(), sb, "");
-		slogger.log(DEBUG, "Enumerate USB devices\n{0}", sb);
-
-		// Use the low-level API, because on Windows the string descriptors cause problems
-		// On Win 7/8/8.1, libusb has a problem with overflows on getting the language descriptor,
-		// so we can't read out the device string descriptors.
-		// This method avoids any further issues down the road by using the ASCII descriptors.
-		slogger.log(TRACE, () -> "Enumerate USB devices using the low-level API\n" +
-				getDevicesLowLevel().map(UsbConnection::printInfo).collect(Collectors.joining("\n")));
-	}
-
-	UsbConnection(final UsbConnectionProvider.Device device) throws KNXException {
+	UsbConnection(final io.calimero.serial.usb.Device device) throws KNXException {
 		this(findDevice(device));
 	}
 
@@ -562,7 +508,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 
 	// returns [UsbInterface, Endpoint Address In, Endpoint Address Out]
 	private Object[] open(final UsbDevice device) throws UsbException {
-		logger.log(INFO, printInfo(device, logger, ""));
+//		logger.log(INFO, printInfo(device, logger, ""));
 
 		final UsbConfiguration configuration = device.getActiveUsbConfiguration();
 		@SuppressWarnings("unchecked")
@@ -699,8 +645,8 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	}
 
 	@SuppressWarnings("unchecked")
-	private static <T, R> R fieldValue(final T instance, boolean useSuperClass, final String fieldName) throws NoSuchFieldException, IllegalAccessException {
-		Class<? extends Object> clazz = instance.getClass();
+	private static <T, R> R fieldValue(final T instance, final boolean useSuperClass, final String fieldName) throws NoSuchFieldException, IllegalAccessException {
+		Class<?> clazz = instance.getClass();
 		if (useSuperClass)
 			clazz = clazz.getSuperclass();
 		final var field = clazz.getDeclaredField(fieldName);
@@ -788,7 +734,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		listeners.fire(l -> l.frameReceived(fe));
 	}
 
-	private static UsbHub getRootHub() {
+	private static UsbHub rootHub() {
 		try {
 			return UsbHostManager.getUsbServices().getRootUsbHub();
 		}
@@ -802,7 +748,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		return hub.getAttachedUsbDevices();
 	}
 
-	private static UsbDevice findDevice(final UsbConnectionProvider.Device device) throws KNXException {
+	private static UsbDevice findDevice(final io.calimero.serial.usb.Device device) throws KNXException {
 		try {
 			return findDeviceByNameLowLevel(device);
 		}
@@ -812,15 +758,18 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 	}
 
 	private static UsbDevice lookupDevice(final DeviceInfo lookup) {
-		return lookupDevice(getRootHub(), lookup);
+		return lookupDevice(rootHub(), lookup)
+				.orElseThrow(() -> new KnxRuntimeException("no USB device matching " + lookup));
 	}
 
-	private static UsbDevice lookupDevice(final UsbHub hub, final DeviceInfo lookup) {
+	private static Optional<UsbDevice> lookupDevice(final UsbHub hub, final DeviceInfo lookup) {
 		try {
 			for (final UsbDevice d : getAttachedDevices(hub)) {
 				if (d.isUsbHub()) {
 					try {
-						return lookupDevice((UsbHub) d, lookup);
+						final var opt = lookupDevice((UsbHub) d, lookup);
+						if (opt.isPresent())
+							return opt;
 					}
 					catch (final KnxRuntimeException e) {
 						slogger.log(DEBUG, e);
@@ -829,10 +778,10 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 				else  {
 					final var ret = busAndDeviceAddress(d);
 					if (ret[0] == lookup.bus() && ret[1] == lookup.deviceAddress())
-						return d;
+						return Optional.of(d);
 				}
 			}
-			throw new KnxRuntimeException("no USB device matching " + lookup);
+			return Optional.empty();
 		}
 		catch (final SecurityException | UsbDisconnectedException e) {
 			throw new KnxRuntimeException("find USB device matching '" + lookup + "'", e);
@@ -846,7 +795,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 			if (matcher.matches()) {
 				final int vendorId = fromHex(matcher.group(1));
 				final int productId = fromHex(matcher.group(2));
-				return findDevice(new UsbConnectionProvider.Device(vendorId, productId));
+				return findDevice(new io.calimero.serial.usb.Device(vendorId, productId));
 			}
 			// try to match a substring in one of the USB device strings
 			return findDeviceByNameLowLevel(device);
@@ -856,70 +805,36 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		}
 	}
 
-	private static List<UsbDevice> collect(final UsbDevice device) {
-		final List<UsbDevice> l = new ArrayList<>();
-		if (device.isUsbHub())
-			getAttachedDevices((UsbHub) device).forEach(d -> l.addAll(collect(d)));
-		else
-			l.add(device);
-		return l;
+	private static DeviceInfo deviceInfo(final UsbDevice device, final List<DeviceInfo> infoList) throws UsbException {
+		if (device instanceof final UsbHub hub && hub.isRootUsbHub())
+			return RootHubInfo;
+
+		final int[] ret = busAndDeviceAddress(device);
+		for (final var info : infoList) {
+			if (ret[0] == info.bus() && ret[1] == info.deviceAddress())
+				return info;
+		}
+		throw new UsbException("no device info for " + device);
 	}
 
-	private static void traverse(final UsbDevice device, final StringBuilder sb, final String indent) {
+	private static void traverse(final UsbDevice device, final StringBuilder sb, final String indent, final List<DeviceInfo> infoList) {
 		try {
-			sb.append(printInfo(device, slogger, indent));
+			sb.append(printInfo(deviceInfo(device, infoList), indent));
 		}
 		catch (final UsbException e) {
 			slogger.log(WARNING, "Accessing USB device, " + e);
 		}
 		if (device.isUsbHub())
 			for (final Iterator<UsbDevice> i = getAttachedDevices((UsbHub) device).iterator(); i.hasNext();)
-				traverse(i.next(), sb.append("\n"), indent + (i.hasNext() ? " |   " : "     "));
+				traverse(i.next(), sb.append("\n"), indent + (i.hasNext() ? " |   " : "     "), infoList);
 	}
 
-	private static String printInfo(final UsbDevice device, final Logger l, final String indent) throws UsbException {
-		final StringBuilder sb = new StringBuilder();
-		final UsbDeviceDescriptor dd = device.getUsbDeviceDescriptor();
-		final String s = indent.isEmpty() ? "" : indent.substring(0, indent.length() - 5) + " |--";
-		// vendor ID is mandatory for KNX USB data interface
-		sb.append(s).append(device);
-
-		// virtual devices don't contain string descriptors
-		final boolean virtual = device instanceof UsbHub && ((UsbHub) device).isRootUsbHub();
-		if (virtual)
-			return sb.toString();
-
-		// manufacturer is mandatory for KNX USB data interface
-		final byte manufacturer = dd.iManufacturer();
-		// product support is optional for KNX USB data interface
-		final byte product = dd.iProduct();
-		final byte sno = dd.iSerialNumber();
-		try {
-			if (manufacturer != 0)
-				sb.append(" ").append(trimAtNull(device.getString(manufacturer)));
-			if (product != 0)
-				sb.append(" ").append(trimAtNull(device.getString(product)));
-			if (sno != 0)
-				sb.append("\n").append(indent).append("S/N ").append(device.getString(sno));
-		}
-		catch (final UnsupportedEncodingException e) {
-			l.log(ERROR, "Java platform lacks support for the required standard charset UTF-16LE", e);
-		}
-		catch (final UsbPlatformException e) {
-			// Thrown on Win 7/8 (USB error 8) on calling device.getString on most USB interfaces.
-			// Therefore, catch it here, but don't issue any error/warning
-			l.log(DEBUG, "extracting USB device strings, {0}", e.toString());
-		}
-		return sb.toString();
+	private static String printInfo(final DeviceInfo info, final String indent) {
+		final String prefix = indent.isEmpty() ? "" : indent.substring(0, indent.length() - 5) + " |--";
+		return prefix + info.toString().replace("\n", "\n" + indent);
 	}
 
-	// sometimes the usb4java high-level API returns strings which exceed past the null terminator
-	private static String trimAtNull(final String s) {
-		final int end = s.indexOf((char) 0);
-		return end > -1 ? s.substring(0, end) : s;
-	}
-
-	private static boolean isKnxInterfaceId(final UsbConnectionProvider.Device device) {
+	private static boolean isKnxInterfaceId(final io.calimero.serial.usb.Device device) {
 		return vendorProductIds.getOrDefault(device.vendorId(), List.of()).contains(device.productId());
 	}
 
@@ -927,7 +842,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		return isKnxInterfaceId(info.device());
 	}
 
-	private static UsbDevice findDeviceByNameLowLevel(final UsbConnectionProvider.Device device) {
+	private static UsbDevice findDeviceByNameLowLevel(final io.calimero.serial.usb.Device device) {
 		try (var devices = getDevicesLowLevel()) {
 			return devices.filter(dev -> match(device, dev.device()))
 					.findFirst().map(UsbConnection::lookupDevice)
@@ -935,9 +850,9 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		}
 	}
 
-	private static final UsbConnectionProvider.Device Any = new UsbConnectionProvider.Device(0, 0);
+	private static final io.calimero.serial.usb.Device Any = new io.calimero.serial.usb.Device(0, 0);
 
-	private static boolean match(final UsbConnectionProvider.Device target, final UsbConnectionProvider.Device test) {
+	private static boolean match(final io.calimero.serial.usb.Device target, final io.calimero.serial.usb.Device test) {
 		if (target.equals(Any))
 			return isKnxInterfaceId(test);
 		return (target.vendorId() == 0 || target.vendorId() == test.vendorId())
@@ -983,34 +898,26 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 				});
 	}
 
-	// libusb low level
-	private static String printInfo(final DeviceInfo info) {
-		final StringBuilder sb = new StringBuilder();
-		sb.append("Bus ").append(info.bus()).append(" Device ").append(info.deviceAddress()).append(": ID ").append(info.device());
-
-		String attach = "";
-		final int parentBus = info.parentBus();
-		if (parentBus != -1)
-			attach = "Parent Hub " + parentBus + ":" + info.parentAddress();
-
-		if (!info.ports().isEmpty()) {
-			final int port = info.ports().get(info.ports().size() - 1);
-			attach += (attach.isEmpty() ? "Attached at port " : ", attached at port ") + port;
-			attach += info.ports().stream().map(String::valueOf)
-					.collect(Collectors.joining("/", " (/bus:" + info.bus() + "/", ")"));
+	private record DeviceInfo(io.calimero.serial.usb.Device device, int bus, int deviceAddress, List<Integer> ports,
+	                          int speed) {
+		@Override
+		public String toString() {
+			if (this == RootHubInfo)
+				return "Root hub";
+			final var joiner = new StringJoiner("\n");
+			joiner.add("Bus %s Device %d: ID %s".formatted(bus(), deviceAddress(), device()));
+			if (!ports().isEmpty()) {
+				final int port = ports().get(ports().size() - 1);
+				final String attached = "Attached at port " + port
+						+ ports().stream().map(String::valueOf)
+								.collect(Collectors.joining("/", " (bus:" + bus() + "/", ")"));
+				joiner.add(attached);
+			}
+			if (speed() != LibUsb.SPEED_UNKNOWN)
+				joiner.add(DescriptorUtils.getSpeedName(speed()) + " Speed USB");
+			return joiner.toString();
 		}
-		final String ind = "    ";
-		if (!attach.isEmpty())
-			sb.append("\n").append(ind).append(attach);
-
-		final int speed = info.speed();
-		if (speed != LibUsb.SPEED_UNKNOWN)
-			sb.append("\n").append(ind).append(DescriptorUtils.getSpeedName(speed)).append(" Speed USB");
-		return sb.toString();
 	}
-
-	private record DeviceInfo(UsbConnectionProvider.Device device, int bus, int deviceAddress, List<Integer> ports, int speed,
-		int parentBus, int parentAddress) {}
 
 	private static DeviceInfo initDeviceInfo(final Device device) {
 		int vendorId = 0;
@@ -1052,22 +959,11 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		final int result = LibUsb.getPortNumbers(device, path);
 		List<Integer> ports = List.of();
 		if (result > 0)
-			ports = IntStream.range(0, result).mapToObj(path::get).map(Byte::toUnsignedInt).collect(Collectors.toUnmodifiableList());
+			ports = IntStream.range(0, result).mapToObj(path::get).map(Byte::toUnsignedInt).toList();
 
 		final int speed = LibUsb.getDeviceSpeed(device);
-
-		int parentBus = -1;
-		int parentAddress = -1;
-		final Device parent = LibUsb.getParent(device);
-		if (parent != null) {
-			// ??? not necessary in my understanding of the USB tree structure, the bus
-			// has to be the same as the child one's
-			parentBus = LibUsb.getBusNumber(parent);
-			parentAddress = LibUsb.getDeviceAddress(parent);
-		}
-
-		return new DeviceInfo(new UsbConnectionProvider.Device(vendorId, productId, serialNumber, manufacturer, product),
-				bus, deviceAddress, ports, speed, parentBus, parentAddress);
+		return new DeviceInfo(new io.calimero.serial.usb.Device(vendorId, productId, serialNumber, manufacturer, product),
+				bus, deviceAddress, ports, speed);
 	}
 
 	private static String toDeviceId(final UsbDevice device) {
