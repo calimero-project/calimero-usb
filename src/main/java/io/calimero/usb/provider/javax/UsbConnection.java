@@ -64,6 +64,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -162,7 +166,8 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	private final UsbPipe in;
 	private final EventListeners<KNXListener> listeners = new EventListeners<>(ConnectionEvent.class);
 
-	private final Object responseLock = new Object();
+	private final Lock responseLock = new ReentrantLock();
+	private final Condition responseCond = responseLock.newCondition();
 	private HidReport response;
 
 	// TODO Make sure list is not filled with junk data over time, e.g., add timestamp and sweep
@@ -666,13 +671,17 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 		long remaining = tunnelingTimeout;
 		final long end = System.currentTimeMillis() + remaining;
 		while (remaining > 0) {
-			synchronized (responseLock) {
+			responseLock.lockInterruptibly();
+			try {
 				if (response != null) {
 					final HidReport r = response;
 					response = null;
 					return r;
 				}
-				responseLock.wait(remaining);
+				responseCond.await(remaining, TimeUnit.MILLISECONDS);
+			}
+			finally {
+				responseLock.unlock();
 			}
 			remaining = end - System.currentTimeMillis();
 		}
@@ -680,9 +689,13 @@ final class UsbConnection implements tuwien.auto.calimero.serial.usb.UsbConnecti
 	}
 
 	private void setResponse(final HidReport response) {
-		synchronized (responseLock) {
+		responseLock.lock();
+		try {
 			this.response = response;
-			responseLock.notify();
+			responseCond.signal();
+		}
+		finally {
+			responseLock.unlock();
 		}
 	}
 
