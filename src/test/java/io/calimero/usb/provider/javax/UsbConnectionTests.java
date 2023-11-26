@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import io.calimero.KNXException;
-import io.calimero.serial.usb.spi.UsbConnectionProvider.Device;
+import io.calimero.serial.usb.Device;
 
 @DisabledOnOs(OS.MAC)
 @DisabledIfEnvironmentVariable(named="CI", matches="true")
@@ -62,10 +62,6 @@ class UsbConnectionTests {
 	private static final String product = "KNX-USB";
 	private static final String sno = "00C500000011";
 
-	@Test
-	void printDevicesInStaticInitializer() throws UsbException {
-		UsbConnection.updateDeviceList();
-	}
 
 	@Test
 	void newUsingAny() throws KNXException, InterruptedException {
@@ -75,7 +71,7 @@ class UsbConnectionTests {
 
 	@Test
 	void newUsingExactMatch() throws KNXException, InterruptedException {
-		try (var devices = UsbConnection.listDevices()) {
+		try (var devices = UsbConnection.attachedKnxDevices()) {
 			final var device = devices.findFirst().orElseThrow();
 			open(device);
 		}
@@ -83,11 +79,11 @@ class UsbConnectionTests {
 
 	@ParameterizedTest
 	@MethodSource("nonExistingDeviceFactory")
-	void noExactMatchFound(final UsbConnectionProvider.Device device) {
+	void noExactMatchFound(final Device device) {
 		assertThrows(KNXException.class, () -> open(device));
 	}
 
-	private static Stream<UsbConnectionProvider.Device> nonExistingDeviceFactory() {
+	private static Stream<Device> nonExistingDeviceFactory() {
 		return Stream.of(new Device(vendorId + 1, productId, sno, manufacturer, product),
 				new Device(vendorId, productId + 1, sno, manufacturer, product),
 				new Device(vendorId, productId, sno + "?", manufacturer, product),

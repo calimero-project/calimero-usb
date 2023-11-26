@@ -97,7 +97,17 @@ record TransferProtocolHeader(int bodyLength, Protocol protocol, ServiceId servi
 		public String toString() { return this == Emi1 ? "EMI1" : this == Emi2 ? "EMI2" : "cEMI"; }
 	}
 
-	/** Service IDs for Bus Access Server device feature service. */
+	/**
+	 * Service IDs for Bus Access Server device feature service.
+	 * <p>
+	 * Device Feature service protocol:
+	 * <ul>
+	 * <li>Device Feature Get is always answered by Device Feature Response</li>
+	 * <li>Device Feature Get is only sent by the USB bus access client-side</li>
+	 * <li>Device Feature Set and Info are not answered</li>
+	 * <li>Device Feature Info is only sent by the USB bus access server-side</li>
+	 * </ul>
+	 */
 	enum BusAccessServerService implements ServiceId {
 		Get, Response, Set, Info;
 

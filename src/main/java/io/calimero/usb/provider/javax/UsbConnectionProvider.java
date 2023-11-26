@@ -40,18 +40,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import io.calimero.KNXException;
+import io.calimero.serial.usb.Device;
 
 /**
- * Provider for USB connections implemented using javax-usb.
+ * Provider for USB connections implemented using javax-usb and usb4java.
  */
 public final class UsbConnectionProvider implements io.calimero.serial.usb.spi.UsbConnectionProvider {
+	@Override
 	public io.calimero.serial.usb.UsbConnection open(final Device device) throws KNXException {
 		return new UsbConnection(device);
-	}
-
-	@Override
-	public io.calimero.serial.usb.UsbConnection open(final int vendorId, final int productId) throws KNXException {
-		return new UsbConnection(new Device(vendorId, productId));
 	}
 
 	@Override
@@ -60,8 +57,8 @@ public final class UsbConnectionProvider implements io.calimero.serial.usb.spi.U
 	}
 
 	@Override
-	public Set<Device> attachedKnxDevices() {
-		try (var devices = UsbConnection.listDevices()) {
+	public Set<Device> attachedKnxUsbDevices() {
+		try (var devices = UsbConnection.attachedKnxDevices()) {
 			return devices.collect(Collectors.toUnmodifiableSet());
 		}
 	}
