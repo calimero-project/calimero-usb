@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 
 plugins {
     `java-library`
@@ -13,11 +14,10 @@ repositories {
     mavenLocal()
 }
 
-ext["junitJupiterVersion"] = "5.10.0"
-ext["desc"] = "Calimero USB service provider"
-
 group = "io.calimero"
 version = "2.6-SNAPSHOT"
+
+val junitJupiterVersion by rootProject.extra { "5.10.1" }
 
 java {
     toolchain {
@@ -50,6 +50,9 @@ tasks.withType<Jar> {
 dependencies {
     api("com.github.calimero:calimero-core:$version")
     api("org.usb4java:usb4java-javax:1.3.0")
+
+    testRuntimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.9")
+	testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
 }
 
 testing {
@@ -57,8 +60,15 @@ testing {
         // Configure the built-in test suite
         val test by getting(JvmTestSuite::class) {
             // Use JUnit Jupiter test framework
-            useJUnitJupiter("5.9.2")
+            useJUnitJupiter("${rootProject.extra.get("junitJupiterVersion")}")
         }
+    }
+}
+
+tasks.test {
+    testLogging {
+        events("standardOut", "failed", "passed")
+        exceptionFormat = TestExceptionFormat.FULL
     }
 }
 
