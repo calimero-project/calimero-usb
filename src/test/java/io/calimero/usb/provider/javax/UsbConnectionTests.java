@@ -40,8 +40,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.stream.Stream;
 
-import javax.usb.UsbException;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.DisabledOnOs;
@@ -62,10 +60,6 @@ class UsbConnectionTests {
 	private static final String product = "KNX-USB";
 	private static final String sno = "00C500000011";
 
-	@Test
-	void printDevicesInStaticInitializer() throws UsbException {
-		UsbConnection.updateDeviceList();
-	}
 
 	@Test
 	void newUsingAny() throws KNXException, InterruptedException {
@@ -75,7 +69,7 @@ class UsbConnectionTests {
 
 	@Test
 	void newUsingExactMatch() throws KNXException, InterruptedException {
-		try (var devices = UsbConnection.listDevices()) {
+		try (var devices = UsbConnection.attachedKnxDevices()) {
 			final var device = devices.findFirst().orElseThrow();
 			open(device);
 		}

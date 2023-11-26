@@ -43,9 +43,10 @@ import tuwien.auto.calimero.KNXException;
 import tuwien.auto.calimero.serial.usb.Device;
 
 /**
- * Provider for USB connections implemented using javax-usb.
+ * Provider for USB connections implemented using javax-usb and usb4java.
  */
 public final class UsbConnectionProvider implements tuwien.auto.calimero.serial.usb.spi.UsbConnectionProvider {
+	@Override
 	public tuwien.auto.calimero.serial.usb.UsbConnection open(final Device device) throws KNXException {
 		return new UsbConnection(device);
 	}
@@ -57,7 +58,7 @@ public final class UsbConnectionProvider implements tuwien.auto.calimero.serial.
 
 	@Override
 	public Set<Device> attachedKnxUsbDevices() {
-		try (var devices = UsbConnection.listDevices()) {
+		try (var devices = UsbConnection.attachedKnxDevices()) {
 			return devices.collect(Collectors.toUnmodifiableSet());
 		}
 	}

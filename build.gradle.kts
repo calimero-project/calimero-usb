@@ -49,7 +49,7 @@ tasks.withType<Jar> {
 
 dependencies {
     api("com.github.calimero:calimero-core:$version")
-    api("org.usb4java:usb4java-javax:1.3.0")
+    implementation("org.usb4java:usb4java-javax:1.3.0")
 
     testRuntimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.9")
 	testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
@@ -67,7 +67,7 @@ testing {
 
 tasks.test {
     testLogging {
-        events("standardOut", "failed", "passed")
+        events("failed") // "standardOut", "passed"
         exceptionFormat = TestExceptionFormat.FULL
     }
 }
