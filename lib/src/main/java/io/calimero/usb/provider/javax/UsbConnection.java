@@ -34,7 +34,7 @@
     version.
 */
 
-package io.calimero.usb;
+package io.calimero.usb.provider.javax;
 
 import static java.lang.System.Logger.Level.DEBUG;
 import static java.lang.System.Logger.Level.ERROR;
@@ -98,11 +98,11 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 
-import io.calimero.usb.HidReport.BusAccessServerFeature;
-import io.calimero.usb.HidReportHeader.PacketType;
-import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
-import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
-import io.calimero.usb.TransferProtocolHeader.Protocol;
+import io.calimero.usb.provider.javax.HidReport.BusAccessServerFeature;
+import io.calimero.usb.provider.javax.HidReportHeader.PacketType;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.KnxTunnelEmi;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.Protocol;
 import tuwien.auto.calimero.CloseEvent;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.DeviceDescriptor.DD0;

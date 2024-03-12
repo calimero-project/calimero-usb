@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2022 B. Malinowsky
+    Copyright (c) 2015, 2023 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,7 +34,7 @@
     version.
 */
 
-package io.calimero.usb;
+package io.calimero.usb.provider.javax;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -42,11 +42,11 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
-import io.calimero.usb.HidReportHeader.PacketType;
-import io.calimero.usb.TransferProtocolHeader.BusAccessServerService;
-import io.calimero.usb.TransferProtocolHeader.KnxTunnelEmi;
-import io.calimero.usb.TransferProtocolHeader.Protocol;
-import io.calimero.usb.TransferProtocolHeader.ServiceId;
+import io.calimero.usb.provider.javax.HidReportHeader.PacketType;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.BusAccessServerService;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.KnxTunnelEmi;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.Protocol;
+import io.calimero.usb.provider.javax.TransferProtocolHeader.ServiceId;
 import tuwien.auto.calimero.DataUnitBuilder;
 import tuwien.auto.calimero.KNXFormatException;
 import tuwien.auto.calimero.KNXIllegalArgumentException;
