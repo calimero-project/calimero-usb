@@ -51,8 +51,8 @@ dependencies {
     api("com.github.calimero:calimero-core:$version")
     implementation("org.usb4java:usb4java-javax:1.3.0")
 
-    testRuntimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.9")
-	testRuntimeOnly("org.slf4j:slf4j-simple:2.0.9")
+    testRuntimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.12")
+	testRuntimeOnly("org.slf4j:slf4j-simple:2.0.12")
 }
 
 testing {
