@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2023 B. Malinowsky
+    Copyright (c) 2015, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -78,7 +78,7 @@ record HidReportHeader(int sequenceNumber, EnumSet<PacketType> packetType, int d
 			throw new KNXFormatException("frame to short to fit HID report header");
 		final int id = frame[offset] & 0xff;
 		if (id != reportId)
-			throw new KNXFormatException("not a KNX USB report (wrong report ID " + id + ")");
+			throw new KNXFormatException("not a KNX USB report (wrong report ID 0x" + Integer.toHexString(id) + ")");
 		final int info = frame[offset + 1] & 0xff;
 		try {
 			final int seqNo = info >> 4;
@@ -98,7 +98,7 @@ record HidReportHeader(int sequenceNumber, EnumSet<PacketType> packetType, int d
 	}
 
 	/** @return the report ID, fixed to 1 for KNX communication */
-	int reportId() {
+	static int reportId() {
 		return reportId;
 	}
 

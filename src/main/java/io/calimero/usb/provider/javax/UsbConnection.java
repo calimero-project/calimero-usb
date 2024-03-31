@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2023 B. Malinowsky
+    Copyright (c) 2015, 2024 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -215,7 +215,14 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 			final byte[] data = event.getData();
 			// with some implementations, we might get a 0-length or unchanged array back, skip further parsing
 			if (event.getActualLength() == 0 || Arrays.equals(data, new byte[64])) {
-				logger.log(DEBUG, "EP {0} {1} empty I/O request (length {2})", idx, dir, event.getActualLength());
+				logger.log(TRACE, "EP {0} {1} empty I/O request (length {2})", idx, dir, event.getActualLength());
+				return;
+			}
+			// skip any transferred data where the USB report ID does not indicate KNX (avoids KNXFormatException below)
+			final int reportId = data[0] & 0xff;
+			if (reportId != HidReportHeader.reportId()) {
+				logger.log(DEBUG, "EP {0} {1} is not a KNX USB report (wrong report ID 0x{2}): {3}", idx, dir,
+						Integer.toHexString(reportId), HexFormat.of().formatHex(data));
 				return;
 			}
 			try {
