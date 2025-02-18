@@ -15,7 +15,7 @@ repositories {
 }
 
 group = "io.calimero"
-version = "2.6-rc1"
+version = "2.6-rc2"
 
 val junitJupiterVersion by rootProject.extra { "5.11.4" }
 
