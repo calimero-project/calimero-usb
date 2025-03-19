@@ -1,6 +1,6 @@
 /*
     Calimero 2 - A library for KNX network access
-    Copyright (c) 2015, 2024 B. Malinowsky
+    Copyright (c) 2015, 2025 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -539,7 +539,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 				final int interfaceClassHid = 0x03;
 				final byte ifClass = alt.getUsbInterfaceDescriptor().bInterfaceClass();
 				if (ifClass != interfaceClassHid)
-					logger.log(WARNING, "{0} {1} doesn't look right, no HID class", device, alt);
+					logger.log(WARNING, "{0} {1} doesn''t look right, no HID class", device, alt);
 				else {
 					@SuppressWarnings("unchecked")
 					final List<UsbEndpoint> endpoints = alt.getUsbEndpoints();
