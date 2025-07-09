@@ -1,4 +1,4 @@
-Calimero USB provider [![CI with Gradle](https://github.com/calimero-project/calimero-usb/actions/workflows/gradle.yml/badge.svg)](https://github.com/calimero-project/calimero-usb/actions/workflows/gradle.yml)
+Calimero USB provider [![CI with Gradle](https://github.com/calimero-project/calimero-usb/actions/workflows/gradle.yml/badge.svg)](https://github.com/calimero-project/calimero-usb/actions/workflows/gradle.yml) [![](https://jitpack.io/v/calimero-project/calimero-usb.svg)](https://jitpack.io/#calimero-project/calimero-usb) [![](https://img.shields.io/badge/jitpack-master-brightgreen?label=JitPack)](https://jitpack.io/#calimero-project/calimero-usb/master)
 =============
 
 Calimero-usb provides the KNX USB connection protocol for calimero-core. 
