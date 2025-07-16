@@ -286,17 +286,24 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		return line.startsWith("\t") ? Stream.of(line.split("#")[0].split(",")).map(s -> fromHex(s)) : Stream.of();
 	}
 
+
+	private static final String pipeConnector = "  │  ";
+	private static final String teeConnector  = "  ├─ ";
+	private static final String leafConnector = "  └─ ";
+
 	static {
 		try (var stream = getDevicesLowLevel()) {
 			final StringBuilder sb = new StringBuilder();
 			final var infoList = stream.toList();
-			traverse(rootHub(), sb, "", infoList);
+			traverse(rootHub(), sb, "", infoList, true);
 			slogger.log(DEBUG, "Attached USB devices:\n{0}", sb);
 
-			final var knxDevices = infoList.stream().filter(UsbConnection::isKnxInterfaceId)
-					.map(info -> printInfo(info, " |   ")).toList();
-			slogger.log(INFO, "Found {0} KNX USB devices{1}{2}", knxDevices.size(), knxDevices.isEmpty() ? "" : ":\n",
-					String.join("\n", knxDevices));
+			final var knxDevices = infoList.stream().filter(UsbConnection::isKnxInterfaceId).toList();
+			final var formatted = new ArrayList<String>();
+			for (var i = knxDevices.iterator(); i.hasNext();)
+				formatted.add(printInfo(i.next(), i.hasNext() ? pipeConnector : "     ", !i.hasNext()));
+			slogger.log(INFO, "Found {0} KNX USB devices{1}{2}", formatted.size(), formatted.isEmpty() ? "" : ":\n",
+					String.join("\n", formatted));
 		}
 		catch (final RuntimeException e) {
 			slogger.log(ERROR, "Enumerate USB devices, " + e);
@@ -837,20 +844,21 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 		throw new UsbException("no device info for " + device);
 	}
 
-	private static void traverse(final UsbDevice device, final StringBuilder sb, final String indent, final List<DeviceInfo> infoList) {
+	private static void traverse(final UsbDevice device, final StringBuilder sb, final String indent,
+			final List<DeviceInfo> infoList, final boolean last) {
 		try {
-			sb.append(printInfo(deviceInfo(device, infoList), indent));
+			sb.append(printInfo(deviceInfo(device, infoList), indent, last));
 		}
 		catch (final UsbException e) {
 			slogger.log(WARNING, "Accessing USB device, " + e);
 		}
 		if (device.isUsbHub())
 			for (final Iterator<UsbDevice> i = getAttachedDevices((UsbHub) device).iterator(); i.hasNext();)
-				traverse(i.next(), sb.append("\n"), indent + (i.hasNext() ? " |   " : "     "), infoList);
+				traverse(i.next(), sb.append("\n"), indent + (i.hasNext() ? pipeConnector : "     "), infoList, !i.hasNext());
 	}
 
-	private static String printInfo(final DeviceInfo info, final String indent) {
-		final String prefix = indent.isEmpty() ? "" : indent.substring(0, indent.length() - 5) + " |--";
+	private static String printInfo(final DeviceInfo info, final String indent, final boolean last) {
+		final String prefix = indent.isEmpty() ? "" : indent.substring(0, indent.length() - 5) + (last ? leafConnector : teeConnector);
 		return prefix + info.toString().replace("\n", "\n" + indent);
 	}
 
