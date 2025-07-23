@@ -21,7 +21,7 @@ val junitJupiterVersion by rootProject.extra { "5.13.2" }
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 
     withSourcesJar()

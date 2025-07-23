@@ -2,7 +2,7 @@ Calimero USB provider [![CI with Gradle](https://github.com/calimero-project/cal
 =============
 
 Calimero-usb provides the KNX USB connection protocol for calimero-core. 
-[JDK 17](https://openjdk.org/projects/jdk/17/) (_java.base_) is the minimum required runtime environment.
+[JDK 21](https://openjdk.org/projects/jdk/21/) (_java.base_) is the minimum required runtime environment.
 
 This implementation uses `org.usb4java:usb4java-javax` to access USB devices, and `System.Logger` for logging.
 
