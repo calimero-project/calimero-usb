@@ -935,7 +935,7 @@ final class UsbConnection implements io.calimero.serial.usb.UsbConnection {
 			final var joiner = new StringJoiner("\n");
 			joiner.add("Bus %s Device %d: ID %s".formatted(bus(), deviceAddress(), device()));
 			if (!ports().isEmpty()) {
-				final int port = ports().get(ports().size() - 1);
+				final int port = ports().getLast();
 				final String attached = "Attached at port " + port
 						+ ports().stream().map(String::valueOf)
 								.collect(Collectors.joining("/", " (bus:" + bus() + "/", ")"));
