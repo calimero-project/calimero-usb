@@ -17,7 +17,7 @@ repositories {
 group = "io.calimero"
 version = "3.0-SNAPSHOT"
 
-val junitJupiterVersion by rootProject.extra { "5.13.2" }
+val junitJupiterVersion by rootProject.extra { "6.0.0" }
 
 java {
     toolchain {
