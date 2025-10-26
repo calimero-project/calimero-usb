@@ -59,6 +59,8 @@ tasks.withType<Jar> {
 dependencies {
     api("io.calimero:calimero-core:$version")
     implementation("org.usb4java:usb4java-javax:1.3.0")
+    runtimeOnly("io.calimero:libusb4java:1.3.1:darwin-aarch64-static")
+    runtimeOnly("io.calimero:libusb4java:1.3.1:win-aarch64-static")
 
     testRuntimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.17")
 	testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
