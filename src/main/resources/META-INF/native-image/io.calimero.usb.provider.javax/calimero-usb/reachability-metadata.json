@@ -1,0 +1,87 @@
+{
+  "reflection": [
+    {
+      "type": "io.calimero.usb.provider.javax.UsbConnectionProvider"
+    },
+    {
+      "type": "javax.usb.UsbHostManager"
+    },
+    {
+      "type": "org.usb4java.Context",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "contextPointer"
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.DeviceList",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "deviceListPointer"
+        },
+        {
+          "name": "size"
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.LibUsb",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "hotplugCallback",
+          "parameterTypes": [
+            "org.usb4java.Context",
+            "org.usb4java.Device",
+            "int",
+            "long"
+          ]
+        },
+        {
+          "name": "triggerPollfdAdded",
+          "parameterTypes": [
+            "java.io.FileDescriptor",
+            "int",
+            "long"
+          ]
+        },
+        {
+          "name": "triggerPollfdRemoved",
+          "parameterTypes": [
+            "java.io.FileDescriptor",
+            "long"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.javax.Services",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "module": "io.calimero.usb.provider.javax",
+      "glob": "META-INF/services/io.calimero.serial.usb.spi.UsbConnectionProvider"
+    },
+    {
+      "module": "io.calimero.usb.provider.javax",
+      "glob": "knxUsbVendorProductIds"
+    },
+    {
+      "module": "io.calimero.usb.provider.javax",
+      "glob": "javax.usb.properties"
+    },
+    {
+      "glob": "org/usb4java/darwin-aarch64/libusb4java.dylib"
+    }
+  ]
+}
