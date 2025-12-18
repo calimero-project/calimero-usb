@@ -7,11 +7,56 @@
       "type": "javax.usb.UsbHostManager"
     },
     {
+      "type": "org.usb4java.ConfigDescriptor",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "configDescriptorPointer"
+        }
+      ]
+    },
+    {
       "type": "org.usb4java.Context",
       "jniAccessible": true,
       "fields": [
         {
           "name": "contextPointer"
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.Device",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ],
+      "fields": [
+        {
+          "name": "devicePointer"
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.DeviceDescriptor",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "deviceDescriptorBuffer"
+        },
+        {
+          "name": "deviceDescriptorPointer"
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.DeviceHandle",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "deviceHandlePointer"
         }
       ]
     },
@@ -26,6 +71,60 @@
           "name": "size"
         }
       ]
+    },
+    {
+      "type": "org.usb4java.EndpointDescriptor",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "endpointDescriptorPointer"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.EndpointDescriptor[]"
+    },
+    {
+      "type": "org.usb4java.Interface",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "interfacePointer"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.InterfaceDescriptor",
+      "jniAccessible": true,
+      "fields": [
+        {
+          "name": "interfaceDescriptorPointer"
+        }
+      ],
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.InterfaceDescriptor[]"
+    },
+    {
+      "type": "org.usb4java.Interface[]"
     },
     {
       "type": "org.usb4java.LibUsb",
@@ -58,11 +157,55 @@
       ]
     },
     {
+      "type": "org.usb4java.javax.AbstractDevice",
+      "fields": [
+        {
+          "name": "id"
+        }
+      ]
+    },
+    {
+      "type": "org.usb4java.javax.DeviceId",
+      "fields": [
+        {
+          "name": "busNumber"
+        },
+        {
+          "name": "deviceAddress"
+        }
+      ]
+    },
+    {
       "type": "org.usb4java.javax.Services",
       "methods": [
         {
           "name": "<init>",
           "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.StringBuffer",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "append",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.nio.HeapIntBuffer",
+      "jniAccessible": true,
+      "methods": [
+        {
+          "name": "put",
+          "parameterTypes": [
+            "int",
+            "int"
+          ]
         }
       ]
     }
@@ -77,11 +220,19 @@
       "glob": "knxUsbVendorProductIds"
     },
     {
-      "module": "io.calimero.usb.provider.javax",
       "glob": "javax.usb.properties"
     },
     {
       "glob": "org/usb4java/darwin-aarch64/libusb4java.dylib"
+    },
+    {
+      "glob": "org/usb4java/linux-aarch64/libusb4java.so"
+    },
+    {
+      "glob": "org/usb4java/linux-x86-64/libusb4java.so"
+    },
+    {
+      "glob": "org/usb4java/win32-x86-64/libusb4java.dll"
     }
   ]
 }
