@@ -1,6 +1,6 @@
 /*
     Calimero 3 - A library for KNX network access
-    Copyright (c) 2022, 2022 B. Malinowsky
+    Copyright (c) 2022, 2026 B. Malinowsky
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,6 +41,8 @@
  */
 module io.calimero.usb.provider.javax {
 	requires io.calimero.core;
+	requires org.usb4java.javax;
+	requires org.usb4java;
 
 	provides io.calimero.serial.usb.spi.UsbConnectionProvider
 	    with io.calimero.usb.provider.javax.UsbConnectionProvider;

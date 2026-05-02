@@ -34,9 +34,11 @@ tasks.compileTestJava { options.encoding = "UTF-8" }
 tasks.javadoc { options.encoding = "UTF-8" }
 
 tasks.compileJava {
-    options.compilerArgs = listOf("-Xlint:all,-serial",
-        "--limit-modules", "io.calimero.core",
-        "--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED")
+    options.compilerArgs = listOf(
+        "-Xlint:all,-serial,-requires-automatic",
+        "--limit-modules", "io.calimero.core,org.usb4java.javax",
+        "--add-reads", "io.calimero.usb.provider.javax=ALL-UNNAMED" // javax.usb:usb-api
+    )
 }
 
 tasks.compileJava {
@@ -59,7 +61,7 @@ tasks.withType<Jar> {
 
 dependencies {
     api("io.calimero:calimero-core:$version")
-    implementation("io.calimero:usb4java-javax:1.3.1")
+    implementation("io.calimero:usb4java-javax:1.3.2")
 
     testRuntimeOnly("org.slf4j:slf4j-jdk-platform-logging:2.0.17")
 	testRuntimeOnly("org.slf4j:slf4j-simple:2.0.17")
