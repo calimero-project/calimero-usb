@@ -160,6 +160,9 @@
       "type": "org.usb4java.javax.AbstractDevice",
       "fields": [
         {
+          "name": "claimedInterfaceNumbers"
+        },
+        {
           "name": "id"
         }
       ]
