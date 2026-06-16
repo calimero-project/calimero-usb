@@ -6,7 +6,7 @@ Calimero-usb provides the KNX USB connection protocol for calimero-core.
 
 This implementation uses `org.usb4java:usb4java-javax` to access USB devices, and `System.Logger` for logging.
 
-When using this provider in a modularized setup, Java needs to be started with the option `--add-reads io.calimero.usb.provider.javax=ALL-UNNAMED`, because usb4java-javax is not modularized.
+When using this provider in a modularized setup, Java needs to be started with the option `--add-reads io.calimero.usb.provider.javax=ALL-UNNAMED`, because javax.usb:usb-api is not modularized.
 
 ### Building from source
 ~~~ sh
