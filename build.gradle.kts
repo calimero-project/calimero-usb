@@ -18,7 +18,7 @@ repositories {
 group = "io.calimero"
 version = "3.0-SNAPSHOT"
 
-val junitJupiterVersion by rootProject.extra { "6.1.0" }
+rootProject.extra.set("junitJupiterVersion", "6.1.0")
 
 java {
     toolchain {
@@ -70,8 +70,7 @@ dependencies {
 testing {
     suites {
         @Suppress("UNUSED_VARIABLE")
-        val test by getting(JvmTestSuite::class) {
-            // Use JUnit Jupiter test framework
+        val test = named<JvmTestSuite>("test") {
             useJUnitJupiter("${rootProject.extra.get("junitJupiterVersion")}")
         }
     }
