@@ -5,7 +5,7 @@ plugins {
     `maven-publish`
     signing
     eclipse
-    id("org.graalvm.buildtools.native") version "1.1.12"
+    id("org.graalvm.buildtools.native") version "1.1.14"
     id("io.github.ben-manes.versions") version "0.64.0"
 }
 
